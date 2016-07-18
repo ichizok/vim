@@ -93,7 +93,7 @@ typedef struct
 #define VV_RO		2	/* read-only */
 #define VV_RO_SBX	4	/* read-only in the sandbox */
 
-#define VV_NAME(s, t)	s, {{t, 0, {0}}, 0, {0}}
+#define VV_NAME(s, t)	s, {NULL, NULL, {t, 0, {0}}, 0, {0}}
 
 static struct vimvar
 {
@@ -7590,6 +7590,8 @@ init_var_dict(dict_T *dict, dictitem_T *dict_var, int scope)
     dict->dv_scope = scope;
     dict->dv_refcount = DO_NOT_FREE_CNT;
     dict->dv_copyID = 0;
+    dict->dv_first = UNORDMARK;
+    dict->dv_last = NULL;
     dict_var->di_tv.vval.v_dict = dict;
     dict_var->di_tv.v_type = VAR_DICT;
     dict_var->di_tv.v_lock = VAR_FIXED;
@@ -7828,6 +7830,8 @@ set_var(
 	    return;
 	}
 	v->di_flags = DI_FLAGS_ALLOC;
+	v->di_prev = NULL;
+	v->di_next = NULL;
     }
 
     if (copy || tv->v_type == VAR_NUMBER || tv->v_type == VAR_FLOAT)

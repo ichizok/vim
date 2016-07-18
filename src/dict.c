@@ -43,6 +43,8 @@ dict_alloc(void)
 	d->dv_scope = 0;
 	d->dv_refcount = 0;
 	d->dv_copyID = 0;
+	d->dv_first = NULL;
+	d->dv_last = NULL;
     }
     return d;
 }
@@ -190,6 +192,8 @@ dictitem_alloc(char_u *key)
     {
 	STRCPY(di->di_key, key);
 	di->di_flags = DI_FLAGS_ALLOC;
+	di->di_prev = NULL;
+	di->di_next = NULL;
     }
     return di;
 }
@@ -208,6 +212,8 @@ dictitem_copy(dictitem_T *org)
     {
 	STRCPY(di->di_key, org->di_key);
 	di->di_flags = DI_FLAGS_ALLOC;
+	di->di_prev = NULL;
+	di->di_next = NULL;
 	copy_tv(&org->di_tv, &di->di_tv);
     }
     return di;
@@ -226,6 +232,44 @@ dictitem_remove(dict_T *dict, dictitem_T *item)
 	internal_error("dictitem_remove()");
     else
 	hash_remove(&dict->dv_hashtab, hi);
+
+    dictitem_delete(dict, item);
+}
+
+/*
+ * Detach a dict item from Dictionary "dict" and free it.
+ */
+    void
+dictitem_delete(dict_T *dict, dictitem_T *item)
+{
+    dictitem_T	**first;
+    dictitem_T	**last;
+
+    if (dict != NULL && IS_ORDDICT(dict))
+    {
+	first = &dict->dv_first;
+	last = &dict->dv_last;
+	if (*first != NULL)
+	{
+	    if (*first == item)
+	    {
+		*first = item->di_next;
+		if (*first)
+		    (*first)->di_prev = NULL;
+	    }
+	    else
+		item->di_prev->di_next = item->di_next;
+	    if (*last == item)
+	    {
+		*last = item->di_prev;
+		if (*last)
+		    (*last)->di_next = NULL;
+	    }
+	    else
+		item->di_next->di_prev = item->di_prev;
+	}
+    }
+
     dictitem_free(item);
 }
 
@@ -251,6 +295,7 @@ dict_copy(dict_T *orig, int deep, int copyID)
 {
     dict_T	*copy;
     dictitem_T	*di;
+    dictitem_T	*di2;
     int		todo;
     hashitem_T	*hi;
 
@@ -258,51 +303,68 @@ dict_copy(dict_T *orig, int deep, int copyID)
 	return NULL;
 
     copy = dict_alloc();
-    if (copy != NULL)
+    if (copy == NULL)
+	return NULL;
+
+    ++copy->dv_refcount;
+
+    if (copyID != 0)
     {
-	if (copyID != 0)
+	orig->dv_copyID = copyID;
+	orig->dv_copydict = copy;
+    }
+
+#define DICT_COPY_PROC() \
+    do \
+    { \
+	di2 = dictitem_alloc(DI2HIKEY(di)); \
+	if (di2 == NULL) \
+	    goto failret; \
+	if (deep) \
+	{ \
+	    if (item_copy(&di->di_tv, &di2->di_tv, deep, \
+		    copyID) == FAIL) \
+	    { \
+		vim_free(di2); \
+		goto failret; \
+	    } \
+	} \
+	else \
+	    copy_tv(&di->di_tv, &di2->di_tv); \
+	if (dict_add(copy, di2) == FAIL) \
+	{ \
+	    dictitem_free(di2); \
+	    goto failret; \
+	} \
+    } while (0)
+
+    if (IS_ORDDICT(orig))
+    {
+	for (di = orig->dv_first; di != NULL && !got_int; di = di->di_next)
 	{
-	    orig->dv_copyID = copyID;
-	    orig->dv_copydict = copy;
+	    DICT_COPY_PROC();
 	}
+    }
+    else
+    {
 	todo = (int)orig->dv_hashtab.ht_used;
 	for (hi = orig->dv_hashtab.ht_array; todo > 0 && !got_int; ++hi)
 	{
 	    if (!HASHITEM_EMPTY(hi))
 	    {
 		--todo;
-
-		di = dictitem_alloc(hi->hi_key);
-		if (di == NULL)
-		    break;
-		if (deep)
-		{
-		    if (item_copy(&HI2DI(hi)->di_tv, &di->di_tv, deep,
-							      copyID) == FAIL)
-		    {
-			vim_free(di);
-			break;
-		    }
-		}
-		else
-		    copy_tv(&HI2DI(hi)->di_tv, &di->di_tv);
-		if (dict_add(copy, di) == FAIL)
-		{
-		    dictitem_free(di);
-		    break;
-		}
+		di = HI2DI(hi);
+		DICT_COPY_PROC();
 	    }
 	}
-
-	++copy->dv_refcount;
-	if (todo > 0)
-	{
-	    dict_unref(copy);
-	    copy = NULL;
-	}
     }
+#undef DICT_COPY_PROC
 
     return copy;
+
+failret:
+    dict_unref(copy);
+    return NULL;
 }
 
 /*
@@ -312,7 +374,30 @@ dict_copy(dict_T *orig, int deep, int copyID)
     int
 dict_add(dict_T *d, dictitem_T *item)
 {
-    return hash_add(&d->dv_hashtab, item->di_key);
+    dictitem_T	**first;
+    dictitem_T	**last;
+
+    if (hash_add(&d->dv_hashtab, item->di_key) == FAIL)
+	return FAIL;
+
+    if (IS_ORDDICT(d))
+    {
+	first = &d->dv_first;
+	last = &d->dv_last;
+	if (*first == NULL)
+	{
+	    *first = *last = item;
+	    item->di_prev = item->di_next = NULL;
+	}
+	else
+	{
+	    (*last)->di_next = item;
+	    item->di_prev = *last;
+	    item->di_next = NULL;
+	    *last = item;
+	}
+    }
+    return OK;
 }
 
 /*
@@ -496,6 +581,7 @@ dict2string(typval_T *tv, int copyID, int restore_copyID)
     char_u	*tofree;
     char_u	numbuf[NUMBUFLEN];
     hashitem_T	*hi;
+    dictitem_T	*di;
     char_u	*s;
     dict_T	*d;
     int		todo;
@@ -505,45 +591,59 @@ dict2string(typval_T *tv, int copyID, int restore_copyID)
     ga_init2(&ga, (int)sizeof(char), 80);
     ga_append(&ga, '{');
 
-    todo = (int)d->dv_hashtab.ht_used;
-    for (hi = d->dv_hashtab.ht_array; todo > 0 && !got_int; ++hi)
+#define DICT2STRING_PROC() \
+    do \
+    { \
+	if (first) \
+	    first = FALSE; \
+	else \
+	    ga_concat(&ga, (char_u *)", "); \
+	tofree = string_quote(DI2HIKEY(di), FALSE); \
+	if (tofree != NULL) \
+	{ \
+	    ga_concat(&ga, tofree); \
+	    vim_free(tofree); \
+	} \
+	ga_concat(&ga, (char_u *)": "); \
+	s = echo_string_core(&di->di_tv, &tofree, numbuf, copyID, \
+					       FALSE, restore_copyID, TRUE); \
+	if (s != NULL) \
+	    ga_concat(&ga, s); \
+	vim_free(tofree); \
+	if (s == NULL || did_echo_string_emsg) \
+	    goto failret; \
+	line_breakcheck(); \
+    } while (0)
+
+    if (IS_ORDDICT(d))
     {
-	if (!HASHITEM_EMPTY(hi))
+	for (di = d->dv_first; di != NULL && !got_int; di = di->di_next)
 	{
-	    --todo;
-
-	    if (first)
-		first = FALSE;
-	    else
-		ga_concat(&ga, (char_u *)", ");
-
-	    tofree = string_quote(hi->hi_key, FALSE);
-	    if (tofree != NULL)
-	    {
-		ga_concat(&ga, tofree);
-		vim_free(tofree);
-	    }
-	    ga_concat(&ga, (char_u *)": ");
-	    s = echo_string_core(&HI2DI(hi)->di_tv, &tofree, numbuf, copyID,
-						 FALSE, restore_copyID, TRUE);
-	    if (s != NULL)
-		ga_concat(&ga, s);
-	    vim_free(tofree);
-	    if (s == NULL || did_echo_string_emsg)
-		break;
-	    line_breakcheck();
-
+	    DICT2STRING_PROC();
 	}
     }
-    if (todo > 0)
+    else
     {
-	vim_free(ga.ga_data);
-	return NULL;
+	todo = (int)d->dv_hashtab.ht_used;
+	for (hi = d->dv_hashtab.ht_array; todo > 0 && !got_int; ++hi)
+	{
+	    if (!HASHITEM_EMPTY(hi))
+	    {
+		--todo;
+		di = HI2DI(hi);
+		DICT2STRING_PROC();
+	    }
+	}
     }
+#undef DICT2STRING_PROC
 
     ga_append(&ga, '}');
     ga_append(&ga, NUL);
     return (char_u *)ga.ga_data;
+
+failret:
+    vim_free(ga.ga_data);
+    return NULL;
 }
 
 /*
@@ -671,49 +771,68 @@ failret:
 dict_extend(dict_T *d1, dict_T *d2, char_u *action)
 {
     dictitem_T	*di1;
+    dictitem_T	*di2;
     hashitem_T	*hi2;
     int		todo;
     char_u	*arg_errmsg = (char_u *)N_("extend() argument");
 
-    todo = (int)d2->dv_hashtab.ht_used;
-    for (hi2 = d2->dv_hashtab.ht_array; todo > 0; ++hi2)
+#define DICT_EXTEND_PROC() \
+    do \
+    { \
+	if (d1->dv_scope != 0) \
+	{ \
+	    /* Disallow replacing a builtin function in l: and g:. \
+	     * Check the key to be valid when adding to any scope. */ \
+	    if (d1->dv_scope == VAR_DEF_SCOPE \
+		    && di2->di_tv.v_type == VAR_FUNC \
+		    && var_check_func_name(DI2HIKEY(di2), di1 == NULL)) \
+		return; \
+	    if (!valid_varname(DI2HIKEY(di2))) \
+		return; \
+	} \
+	if (di1 == NULL) \
+	{ \
+	    di1 = dictitem_copy(di2); \
+	    if (di1 != NULL && dict_add(d1, di1) == FAIL) \
+		dictitem_free(di1); \
+	} \
+	else if (*action == 'e') \
+	{ \
+	    EMSG2(_("E737: Key already exists: %s"), DI2HIKEY(di2)); \
+	    return; \
+	} \
+	else if (*action == 'f' && di2 != di1) \
+	{ \
+	    if (tv_check_lock(di1->di_tv.v_lock, arg_errmsg, TRUE) \
+		  || var_check_ro(di1->di_flags, arg_errmsg, TRUE)) \
+		return; \
+	    clear_tv(&di1->di_tv); \
+	    copy_tv(&di2->di_tv, &di1->di_tv); \
+	} \
+    } while (0)
+
+    if (IS_ORDDICT(d2))
     {
-	if (!HASHITEM_EMPTY(hi2))
+	for (di2 = d2->dv_first; di2 != NULL; di2 = di2->di_next)
 	{
-	    --todo;
-	    di1 = dict_find(d1, hi2->hi_key, -1);
-	    if (d1->dv_scope != 0)
+	    di1 = dict_find(d1, DI2HIKEY(di2), -1);
+	    DICT_EXTEND_PROC();
+	}
+    }
+    else
+    {
+	todo = (int)d2->dv_hashtab.ht_used;
+	for (hi2 = d2->dv_hashtab.ht_array; todo > 0; ++hi2)
+	{
+	    if (!HASHITEM_EMPTY(hi2))
 	    {
-		/* Disallow replacing a builtin function in l: and g:.
-		 * Check the key to be valid when adding to any scope. */
-		if (d1->dv_scope == VAR_DEF_SCOPE
-			&& HI2DI(hi2)->di_tv.v_type == VAR_FUNC
-			&& var_check_func_name(hi2->hi_key, di1 == NULL))
-		    break;
-		if (!valid_varname(hi2->hi_key))
-		    break;
-	    }
-	    if (di1 == NULL)
-	    {
-		di1 = dictitem_copy(HI2DI(hi2));
-		if (di1 != NULL && dict_add(d1, di1) == FAIL)
-		    dictitem_free(di1);
-	    }
-	    else if (*action == 'e')
-	    {
-		EMSG2(_("E737: Key already exists: %s"), hi2->hi_key);
-		break;
-	    }
-	    else if (*action == 'f' && HI2DI(hi2) != di1)
-	    {
-		if (tv_check_lock(di1->di_tv.v_lock, arg_errmsg, TRUE)
-		      || var_check_ro(di1->di_flags, arg_errmsg, TRUE))
-		    break;
-		clear_tv(&di1->di_tv);
-		copy_tv(&HI2DI(hi2)->di_tv, &di1->di_tv);
+		--todo;
+		di1 = dict_find(d1, hi2->hi_key, -1);
+		DICT_EXTEND_PROC();
 	    }
 	}
     }
+#undef DICT_EXTEND_PROC
 }
 
 /*
@@ -773,11 +892,8 @@ dict_equal(
     void
 dict_list(typval_T *argvars, typval_T *rettv, int what)
 {
-    list_T	*l2;
     dictitem_T	*di;
     hashitem_T	*hi;
-    listitem_T	*li;
-    listitem_T	*li2;
     dict_T	*d;
     int		todo;
 
@@ -792,58 +908,74 @@ dict_list(typval_T *argvars, typval_T *rettv, int what)
     if (rettv_list_alloc(rettv) == FAIL)
 	return;
 
-    todo = (int)d->dv_hashtab.ht_used;
-    for (hi = d->dv_hashtab.ht_array; todo > 0; ++hi)
+#define DICT_LIST_PROC() \
+    do \
+    { \
+	list_T	*l2; \
+	listitem_T	*li; \
+	listitem_T	*li2; \
+	li = listitem_alloc(); \
+	if (li == NULL) \
+	    return; \
+	list_append(rettv->vval.v_list, li); \
+	if (what == 0) \
+	{ \
+	    /* keys() */ \
+	    li->li_tv.v_type = VAR_STRING; \
+	    li->li_tv.v_lock = 0; \
+	    li->li_tv.vval.v_string = vim_strsave(di->di_key); \
+	} \
+	else if (what == 1) \
+	{ \
+	    /* values() */ \
+	    copy_tv(&di->di_tv, &li->li_tv); \
+	} \
+	else \
+	{ \
+	    /* items() */ \
+	    l2 = list_alloc(); \
+	    li->li_tv.v_type = VAR_LIST; \
+	    li->li_tv.v_lock = 0; \
+	    li->li_tv.vval.v_list = l2; \
+	    if (l2 == NULL) \
+		return; \
+	    ++l2->lv_refcount; \
+	    li2 = listitem_alloc(); \
+	    if (li2 == NULL) \
+		return; \
+	    list_append(l2, li2); \
+	    li2->li_tv.v_type = VAR_STRING; \
+	    li2->li_tv.v_lock = 0; \
+	    li2->li_tv.vval.v_string = vim_strsave(di->di_key); \
+	    li2 = listitem_alloc(); \
+	    if (li2 == NULL) \
+		return; \
+	    list_append(l2, li2); \
+	    copy_tv(&di->di_tv, &li2->li_tv); \
+	} \
+    } while (0)
+
+    if (IS_ORDDICT(d))
     {
-	if (!HASHITEM_EMPTY(hi))
+	for (di = d->dv_first; di != NULL; di = di->di_next)
 	{
-	    --todo;
-	    di = HI2DI(hi);
-
-	    li = listitem_alloc();
-	    if (li == NULL)
-		break;
-	    list_append(rettv->vval.v_list, li);
-
-	    if (what == 0)
+	    DICT_LIST_PROC();
+	}
+    }
+    else
+    {
+	todo = (int)d->dv_hashtab.ht_used;
+	for (hi = d->dv_hashtab.ht_array; todo > 0; ++hi)
+	{
+	    if (!HASHITEM_EMPTY(hi))
 	    {
-		/* keys() */
-		li->li_tv.v_type = VAR_STRING;
-		li->li_tv.v_lock = 0;
-		li->li_tv.vval.v_string = vim_strsave(di->di_key);
-	    }
-	    else if (what == 1)
-	    {
-		/* values() */
-		copy_tv(&di->di_tv, &li->li_tv);
-	    }
-	    else
-	    {
-		/* items() */
-		l2 = list_alloc();
-		li->li_tv.v_type = VAR_LIST;
-		li->li_tv.v_lock = 0;
-		li->li_tv.vval.v_list = l2;
-		if (l2 == NULL)
-		    break;
-		++l2->lv_refcount;
-
-		li2 = listitem_alloc();
-		if (li2 == NULL)
-		    break;
-		list_append(l2, li2);
-		li2->li_tv.v_type = VAR_STRING;
-		li2->li_tv.v_lock = 0;
-		li2->li_tv.vval.v_string = vim_strsave(di->di_key);
-
-		li2 = listitem_alloc();
-		if (li2 == NULL)
-		    break;
-		list_append(l2, li2);
-		copy_tv(&di->di_tv, &li2->li_tv);
+		--todo;
+		di = HI2DI(hi);
+		DICT_LIST_PROC();
 	    }
 	}
     }
+#undef DICT_LIST_PROC
 }
 
 #endif /* defined(FEAT_EVAL) */

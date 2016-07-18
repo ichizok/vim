@@ -1685,7 +1685,7 @@ _DictionaryItem(DictionaryObject *self, PyObject *args, int flags)
 	}
 
 	hash_remove(&dict->dv_hashtab, hi);
-	dictitem_free(di);
+	dictitem_delete(dict, di);
     }
 
     return ret;
@@ -1813,7 +1813,7 @@ DictionaryAssItem(
 	}
 	hi = hash_find(&dict->dv_hashtab, di->di_key);
 	hash_remove(&dict->dv_hashtab, hi);
-	dictitem_free(di);
+	dictitem_delete(dict, di);
 	Py_XDECREF(todecref);
 	return 0;
     }
@@ -2117,7 +2117,7 @@ DictionaryPopItem(DictionaryObject *self)
     }
 
     hash_remove(&self->dict->dv_hashtab, hi);
-    dictitem_free(di);
+    dictitem_delete(self->dict, di);
 
     return ret;
 }

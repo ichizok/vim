@@ -826,6 +826,8 @@ call_user_func(
 	    if (v == NULL)
 		break;
 	    v->di_flags = DI_FLAGS_RO | DI_FLAGS_FIX | DI_FLAGS_ALLOC;
+	    v->di_prev = NULL;
+	    v->di_next = NULL;
 	}
 	STRCPY(v->di_key, name);
 

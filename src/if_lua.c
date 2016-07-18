@@ -932,7 +932,7 @@ luaV_dict_newindex (lua_State *L)
     {
 	hashitem_T *hi = hash_find(&d->dv_hashtab, di->di_key);
 	hash_remove(&d->dv_hashtab, hi);
-	dictitem_free(di);
+	dictitem_delete(d, di);
     }
     else {
 	typval_T v;

@@ -1293,17 +1293,22 @@ typedef struct {
  * Also used for a variable.
  * The key is copied into "di_key" to avoid an extra alloc/free for it.
  */
+typedef struct dictitem_S dictitem_T;
+
 struct dictitem_S
 {
+    dictitem_T	*di_prev;	/* previous item in dict */
+    dictitem_T	*di_next;	/* next item in dect */
     typval_T	di_tv;		/* type and value of the variable */
     char_u	di_flags;	/* flags (only used for variable) */
     char_u	di_key[1];	/* key (actually longer!) */
 };
-typedef struct dictitem_S dictitem_T;
 
 /* A dictitem with a 16 character key (plus NUL). */
 struct dictitem16_S
 {
+    dictitem_T	*di_prev;	/* previous item in dict */
+    dictitem_T	*di_next;	/* next item in dect */
     typval_T	di_tv;		/* type and value of the variable */
     char_u	di_flags;	/* flags (only used for variable) */
     char_u	di_key[17];	/* key */
@@ -1329,6 +1334,8 @@ struct dictvar_S
     dict_T	*dv_copydict;	/* copied dict used by deepcopy() */
     dict_T	*dv_used_next;	/* next dict in used dicts list */
     dict_T	*dv_used_prev;	/* previous dict in used dicts list */
+    dictitem_T	*dv_first;	/* first item, NULL if none */
+    dictitem_T	*dv_last;	/* last item, NULL if none */
 };
 
 #if defined(FEAT_EVAL) || defined(PROTO)

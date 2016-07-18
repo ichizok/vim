@@ -368,3 +368,7 @@
 # define DI2HIKEY(di) ((di)->di_key)
 # define HIKEY2DI(p)  ((dictitem_T *)(p - offsetof(dictitem_T, di_key)))
 # define HI2DI(hi)     HIKEY2DI((hi)->hi_key)
+
+/* Ordered-dict manipulation. */
+# define UNORDMARK     ((void *)~0)
+# define IS_ORDDICT(d) ((d)->dv_first != UNORDMARK)
