@@ -1056,17 +1056,15 @@ func Test_pipe_to_buffer_raw()
     return
   endif
   call ch_log('Test_raw_pipe_to_buffer()')
-  let options = {'out_mode': 'raw', 'out_io': 'buffer', 'out_name': 'testout'}
+  let options = {'out_mode': 'raw', 'out_io': 'buffer', 'out_name': 'testout', 'out_msg': 0}
   split testout
   let job = job_start([s:python, '-c', 
         \ 'import sys; [sys.stdout.write(".") and sys.stdout.flush() for _ in range(10000)]'], options)
   call assert_equal("run", job_status(job))
-  call WaitFor('len(join(getline(2,line("$")),"") >= 10000')
   try
-    for line in getline(2, '$')
-      let line = substitute(line, '^\.*', '', '')
-      call assert_equal('', line)
-    endfor
+    call WaitFor('len(join(getline(1,line("$")),"") >= 10000')
+    call assert_equal(1, line('$'))
+    call assert_equal(10000, len(getline(1)))
   finally
     call job_stop(job)
     bwipe!
