@@ -2273,8 +2273,30 @@ append_to_buffer(buf_T *buffer, char_u *msg, channel_T *channel, int part)
 	ml_replace(lnum, msg, TRUE);
 	lnum = 0;
     }
-    else
+    else if (ch_part->ch_mode != MODE_RAW)
 	ml_append(lnum, msg, 0, FALSE);
+    else
+    {
+	char_u	*new_line;
+	char_u	*orig_line;
+	size_t	orig_len;
+	size_t	msg_len;
+
+	orig_line = ml_get(lnum);
+	orig_len = STRLEN(orig_line);
+	msg_len = STRLEN(msg);
+
+	new_line = alloc(orig_len + msg_len + 1);
+	if (new_line != NULL)
+	{
+	    memcpy((char *)new_line, (char *)orig_line, orig_len);
+	    memcpy((char *)(new_line + orig_len), (char *)msg, msg_len);
+	    new_line[orig_len + msg_len] = NUL;
+	    if (ml_replace(lnum, new_line, FALSE) != OK)
+		vim_free(new_line);
+	    --lnum;
+	}
+    }
     appended_lines_mark(lnum, 1L);
     curbuf = save_curbuf;
     if (ch_part->ch_nomodifiable)
