@@ -8488,11 +8488,11 @@ check_for_delay(int check_msg_scroll)
 screen_valid(int doclear)
 {
     screenalloc(doclear);	   /* allocate screen buffers if size changed */
-    return (ScreenLines != NULL
-#ifndef FEAT_GUI
-	    && termcap_active
+    return (ScreenLines != NULL && (
+#ifdef FEAT_GUI
+		gui.in_use ||
 #endif
-	    );
+		termcap_active));
 }
 
 /*
