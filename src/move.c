@@ -177,7 +177,7 @@ update_topline(void)
     int		save_so = p_so;
 #endif
 
-    if (!screen_valid(TRUE))
+    if (!screen_valid(TRUE) || !termcap_active)
 	return;
 
     /* If the window height is zero just use the cursor line. */

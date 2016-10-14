@@ -504,7 +504,7 @@ update_screen(int type)
 #endif
 
     /* Don't do anything if the screen structures are (not yet) valid. */
-    if (!screen_valid(TRUE))
+    if (!screen_valid(TRUE) || !termcap_active)
 	return;
 
     if (must_redraw)
@@ -824,7 +824,7 @@ update_single_line(win_T *wp, linenr_T lnum)
     int		j;
 
     /* Don't do anything if the screen structures are (not yet) valid. */
-    if (!screen_valid(TRUE))
+    if (!screen_valid(TRUE) || !termcap_active)
 	return;
 
     if (lnum >= wp->w_topline && lnum < wp->w_botline
@@ -8488,11 +8488,7 @@ check_for_delay(int check_msg_scroll)
 screen_valid(int doclear)
 {
     screenalloc(doclear);	   /* allocate screen buffers if size changed */
-    return (ScreenLines != NULL && (
-#ifdef FEAT_GUI
-		gui.in_use ||
-#endif
-		termcap_active));
+    return (ScreenLines != NULL);
 }
 
 /*
