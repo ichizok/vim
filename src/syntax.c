@@ -6850,6 +6850,10 @@ static char *(highlight_init_light[]) =
 	     "Pmenu ctermbg=LightMagenta ctermfg=Black guibg=LightMagenta"),
 	CENT("PmenuSel ctermbg=LightGrey ctermfg=Black",
 	     "PmenuSel ctermbg=LightGrey ctermfg=Black guibg=Grey"),
+	CENT("PmenuEm term=bold cterm=bold ctermbg=LightMagenta ctermfg=Black",
+	     "PmenuEm term=bold cterm=bold ctermbg=LightMagenta ctermfg=Black guibg=LightMagenta"),
+	CENT("PmenuSelEm term=bold cterm=bold ctermbg=LightGrey ctermfg=Black",
+	     "PmenuSelEm term=bold cterm=bold ctermbg=LightGrey ctermfg=Black guibg=Grey"),
 #endif
 	CENT("SpecialKey term=bold ctermfg=DarkBlue",
 	     "SpecialKey term=bold ctermfg=DarkBlue guifg=Blue"),
@@ -6940,6 +6944,10 @@ static char *(highlight_init_dark[]) =
 	     "Pmenu ctermbg=Magenta ctermfg=Black guibg=Magenta"),
 	CENT("PmenuSel ctermbg=Black ctermfg=DarkGrey",
 	     "PmenuSel ctermbg=Black ctermfg=DarkGrey guibg=DarkGrey"),
+	CENT("PmenuEm term=bold cterm=bold ctermbg=Magenta ctermfg=White",
+	     "PmenuEm term=bold cterm=bold ctermbg=Magenta ctermfg=White guibg=Magenta"),
+	CENT("PmenuSelEm term=bold cterm=bold ctermbg=Black ctermfg=White",
+	     "PmenuSelEm term=bold cterm=bold ctermbg=Black ctermfg=White guibg=DarkGrey"),
 #endif
 	CENT("Title term=bold ctermfg=LightMagenta",
 	     "Title term=bold ctermfg=LightMagenta gui=bold guifg=Magenta"),

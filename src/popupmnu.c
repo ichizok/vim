@@ -276,9 +276,12 @@ pum_redraw(void)
     int		col;
     int		attr_norm = highlight_attr[HLF_PNI];
     int		attr_select = highlight_attr[HLF_PSI];
+    int		attr_norem = highlight_attr[HLF_PNEM];
+    int		attr_selem = highlight_attr[HLF_PSEM];
     int		attr_scroll = highlight_attr[HLF_PSB];
     int		attr_thumb = highlight_attr[HLF_PST];
     int		attr;
+    int		attr_em;
     int		i;
     int		idx;
     char_u	*s;
@@ -307,6 +310,7 @@ pum_redraw(void)
     {
 	idx = i + pum_first;
 	attr = (idx == pum_selected) ? attr_select : attr_norm;
+	attr_em = (idx == pum_selected) ? attr_selem : attr_norem;
 
 	/* prepend a space if there is room */
 #ifdef FEAT_RIGHTLEFT
@@ -396,8 +400,17 @@ pum_redraw(void)
 			{
 			    if (st != NULL)
 			    {
-				screen_puts_len(st, (int)STRLEN(st), row, col,
-									attr);
+				int len = (int)STRLEN(st);
+
+				if (round == 1)
+				{
+				    screen_putchar(st[0], row, col, attr_em);
+				    if (len > 1)
+					screen_puts_len(st + 1, len - 1,
+							  row, col + 1, attr);
+				}
+				else
+				    screen_puts_len(st, len, row, col, attr);
 				vim_free(st);
 			    }
 			    col += width;

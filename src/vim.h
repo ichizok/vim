@@ -1408,6 +1408,8 @@ typedef enum
     , HLF_SPL	    /* SpellLocal */
     , HLF_PNI	    /* popup menu normal item */
     , HLF_PSI	    /* popup menu selected item */
+    , HLF_PNEM	    /* popup menu emphatic characters */
+    , HLF_PSEM	    /* popup menu emphatic characters on selected item */
     , HLF_PSB	    /* popup menu scrollbar */
     , HLF_PST	    /* popup menu scrollbar thumb */
     , HLF_TP	    /* tabpage line */
@@ -1425,7 +1427,7 @@ typedef enum
 		  'n', 'N', 'r', 's', 'S', 'c', 't', 'v', 'V', 'w', 'W', \
 		  'f', 'F', 'A', 'C', 'D', 'T', '-', '>', \
 		  'B', 'P', 'R', 'L', \
-		  '+', '=', 'x', 'X', '*', '#', '_', '!', '.', 'o'}
+		  '+', '=', 'k', 'K', 'x', 'X', '*', '#', '_', '!', '.', 'o'}
 
 /*
  * Boolean constants
