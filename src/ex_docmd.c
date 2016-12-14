@@ -1781,6 +1781,7 @@ do_one_cmd(
     char_u		*errormsg = NULL;	/* error message */
     char_u		*after_modifier = NULL;
     exarg_T		ea;			/* Ex command arguments */
+    exarg_T		*save_eap = cur_eap;
     long		verbose_save = -1;
     int			save_msg_scroll = msg_scroll;
     int			save_msg_silent = -1;
@@ -1791,6 +1792,9 @@ do_one_cmd(
     cmdmod_T		save_cmdmod;
     int			ni;			/* set when Not Implemented */
     char_u		*cmd;
+
+    /* set current exarg */
+    cur_eap = &ea;
 
     vim_memset(&ea, 0, sizeof(ea));
     ea.line1 = 1;
@@ -3053,6 +3057,9 @@ doend:
 #ifdef FEAT_EVAL
     --ex_nesting_level;
 #endif
+
+    /* restore exarg */
+    cur_eap = save_eap;
 
     return ea.nextcmd;
 }

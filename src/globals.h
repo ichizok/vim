@@ -629,6 +629,8 @@ EXTERN char_u	*vim_tempdir INIT(= NULL); /* Name of Vim's own temp dir.
 					      Ends in a slash. */
 #endif
 
+EXTERN exarg_T	*cur_eap INIT(= NULL);
+
 /*
  * When starting or exiting some things are done differently (e.g. screen
  * updating).

@@ -231,6 +231,7 @@ static int eval7(char_u **arg, typval_T *rettv, int evaluate, int want_string);
 static int eval_index(char_u **arg, typval_T *rettv, int evaluate, int verbose);
 static int get_string_tv(char_u **arg, typval_T *rettv, int evaluate);
 static int get_lit_string_tv(char_u **arg, typval_T *rettv, int evaluate);
+static int get_raw_string_tv(char_u **arg, typval_T *rettv, int evaluate);
 static int free_unref_items(int copyID);
 static int get_env_tv(char_u **arg, typval_T *rettv, int evaluate);
 static int get_env_len(char_u **arg);
@@ -4254,6 +4255,12 @@ eval7(
 		break;
 
     /*
+     * Raw string constant: `string`.
+     */
+    case '`':	ret = get_raw_string_tv(arg, rettv, evaluate);
+		break;
+
+    /*
      * List: [expr, expr]
      */
     case '[':	ret = get_list_tv(arg, rettv, evaluate);
@@ -5013,6 +5020,85 @@ get_lit_string_tv(char_u **arg, typval_T *rettv, int evaluate)
 	MB_COPY_CHAR(p, str);
     }
     *str = NUL;
+    *arg = p + 1;
+
+    return OK;
+}
+
+/*
+ * Allocate a variable for a `string` constant.
+ * Return OK or FAIL.
+ */
+    static int
+get_raw_string_tv(char_u **arg, typval_T *rettv, int evaluate)
+{
+    char_u	*start = *arg + 1;
+    char_u	*p = start;
+    garray_T	ga;
+
+    if (evaluate)
+	ga_init2(&ga, 1, 0x400);
+
+    /*
+     * Find the end of the string, skipping ''.
+     */
+    do
+    {
+	char_u *str = p;
+
+	for (; *p != NUL && *p != '`'; mb_ptr_adv(p))
+	    ;
+
+	if (evaluate)
+	{
+	    char_u c = *p;
+
+	    *p = NUL;
+	    ga_concat(&ga, str);
+	    *p = c;
+	}
+
+	if (*p == '`')
+	    break;
+
+	if (cur_eap == NULL || cur_eap->getline == NULL)
+	    break;
+
+	p = cur_eap->getline(
+#ifdef FEAT_EVAL
+		cur_eap->cstack->cs_looplevel > 0 ? -1 :
+#endif
+		NUL, cur_eap->cookie, 0);
+
+	if (p == NULL)
+	    break;
+
+	if (evaluate)
+	    ga_append(&ga, '\n');
+
+	if (str != start)
+	    vim_free(str);
+    } while (1);
+
+    if (*p != '`')
+    {
+	EMSG2(_("E115: Missing quote: %s"), *arg);
+	if (evaluate)
+	    ga_clear(&ga);
+	return FAIL;
+    }
+
+    /* If only parsing return after setting "*arg" */
+    if (!evaluate)
+    {
+	*arg = p + 1;
+	return OK;
+    }
+
+    ga_append(&ga, NUL);
+
+    rettv->v_type = VAR_STRING;
+    rettv->vval.v_string = (char_u *)ga.ga_data;
     *arg = p + 1;
 
     return OK;
