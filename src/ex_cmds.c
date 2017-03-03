@@ -7524,6 +7524,10 @@ ex_sign(exarg_T *eap)
     sign_T	*sp_prev;
     buf_T	*buf;
 
+    /* In silect mode (ex -s), ":sign" command does nothing. */
+    if (silent_mode)
+	return;
+
     /* Parse the subcommand. */
     p = skiptowhite(arg);
     idx = sign_cmd_idx(arg, p);
