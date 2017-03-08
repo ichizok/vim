@@ -54,6 +54,7 @@
 #define CMDWIN	     0x100000L	/* allowed in cmdline window */
 #define MODIFY       0x200000L	/* forbidden in non-'modifiable' buffer */
 #define EXFLAGS      0x400000L	/* allow flags after count in argument */
+#define NOBATCH      0x800000L	/* disable in batch mode */
 #define FILES	(XFILE | EXTRA)	/* multiple extra files allowed */
 #define WORD1	(EXTRA | NOSPC)	/* one extra word allowed */
 #define FILE1	(FILES | NOSPC)	/* 1 file allowed, defaults to current file */
@@ -1290,7 +1291,7 @@ EX(CMD_simalt,		"simalt",	ex_simalt,
 			NEEDARG|WORD1|TRLBAR|CMDWIN,
 			ADDR_LINES),
 EX(CMD_sign,		"sign",		ex_sign,
-			NEEDARG|RANGE|NOTADR|EXTRA|CMDWIN,
+			NEEDARG|RANGE|NOTADR|EXTRA|CMDWIN|NOBATCH,
 			ADDR_LINES),
 EX(CMD_silent,		"silent",	ex_wrongmodifier,
 			NEEDARG|EXTRA|BANG|NOTRLCOM|SBOXOK|CMDWIN,

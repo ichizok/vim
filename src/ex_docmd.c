@@ -2485,6 +2485,12 @@ do_one_cmd(
 	    errormsg = (char_u *)_(e_modifiable);
 	    goto doend;
 	}
+	if (silent_mode && (ea.argt & NOBATCH))
+	{
+	    /* Command not allowed in batch mode. */
+	    errormsg = (char_u *)_("E941: Not allowed in batch mode");
+	    goto doend;
+	}
 
 	if (text_locked() && !(ea.argt & CMDWIN)
 		&& !IS_USER_CMDIDX(ea.cmdidx))
