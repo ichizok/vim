@@ -3322,28 +3322,29 @@ may_req_ambiguous_char_width(void)
 	    && *T_U7 != NUL
 	    && !option_was_set((char_u *)"ambiwidth"))
     {
-	 char_u	buf[16];
+	char_u	buf[16];
 
-	 LOG_TR("Sending U7 request");
-	 /* Do this in the second row.  In the first row the returned sequence
-	  * may be CSI 1;2R, which is the same as <S-F3>. */
-	 term_windgoto(1, 0);
-	 buf[mb_char2bytes(0x25bd, buf)] = 0;
-	 out_str(buf);
-	 out_str(T_U7);
-	 u7_status = U7_SENT;
-	 out_flush();
+	LOG_TR("Sending U7 request");
+	/* Do this in the second row.  In the first row the returned sequence
+	 * may be CSI 1;2R, which is the same as <S-F3>. */
+	term_windgoto(1, 0);
+	buf[mb_char2bytes(0x25bd, buf)] = 0;
+	out_str(buf);
+	out_str(T_U7);
+	u7_status = U7_SENT;
+	out_flush();
 
-	 /* This overwrites a few characters on the screen, a redraw is needed
-	  * after this. Clear them out for now. */
-	 term_windgoto(1, 0);
-	 out_str((char_u *)"  ");
-	 term_windgoto(0, 0);
+	/* This overwrites a few characters on the screen, a redraw is needed
+	 * after this. Clear them out for now. */
+	term_windgoto(1, 0);
+	out_str((char_u *)"  ");
+	term_windgoto(0, 0);
+	screen_start();
 
-	 /* check for the characters now, otherwise they might be eaten by
-	  * get_keystroke() */
-	 out_flush();
-	 (void)vpeekc_nomap();
+	/* check for the characters now, otherwise they might be eaten by
+	 * get_keystroke() */
+	out_flush();
+	(void)vpeekc_nomap();
     }
 }
 # endif
