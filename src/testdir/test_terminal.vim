@@ -661,21 +661,27 @@ func Test_terminal_list_args()
 endfunction
 
 func Test_terminal_noblock()
-  let buf = term_start(&shell)
+  let save_shell = &shell
   let wait_time = 5000
   let letters = 'abcdefghijklmnopqrstuvwxyz'
   if has('bsd') || has('mac') || has('sun')
     " The shell or something else has a problem dealing with more than 1000
     " characters at the same time.  It's very slow too.
-    let len = 1000
-    let wait_time = 15000
-    let letters = 'abcdefghijklm'
+    if executable('bash')
+      let &shell = 'bash'
+    elseif executable('zsh')
+      let &shell = 'zsh'
+    elseif executable('tcsh')
+      let &shell = 'tcsh'
+    endif
+    let len = 1017 " 1024 - len("echo \<cr>\<lf>")
   " NPFS is used in Windows, nonblocking mode does not work properly.
   elseif has('win32')
     let len = 1
   else
     let len = 5000
   endif
+  let buf = term_start(&shell)
 
   " Send a lot of text lines, should be buffered properly.
   for c in split(letters, '\zs')
@@ -697,6 +703,7 @@ func Test_terminal_noblock()
   call StopShellInTerminal(buf)
   call term_wait(buf)
   unlet g:job
+  let &shell = save_shell
   bwipe
 endfunc
 
