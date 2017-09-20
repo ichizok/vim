@@ -144,7 +144,7 @@ func Test_number_with_linewrap1()
 endfunc
 
 " Pending: https://groups.google.com/forum/#!topic/vim_dev/tzNKP7EDWYI
-func XTest_number_with_linewrap2()
+func Test_number_with_linewrap2()
   call s:test_windows(3, 20)
   normal! 61ia
   setl number wrap
@@ -162,7 +162,7 @@ func XTest_number_with_linewrap2()
 endfunc
 
 " Pending: https://groups.google.com/forum/#!topic/vim_dev/tzNKP7EDWYI
-func XTest_number_with_linewrap3()
+func Test_number_with_linewrap3()
   call s:test_windows(4, 20)
   normal! 81ia
   setl number wrap

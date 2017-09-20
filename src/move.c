@@ -950,6 +950,7 @@ curs_columns(
     int		width = 0;
     int		textwidth;
     int		new_leftcol;
+    int		prev_wrow;
     colnr_T	startcol;
     colnr_T	endcol;
     colnr_T	prev_skipcol;
@@ -988,6 +989,7 @@ curs_columns(
     /*
      * Now compute w_wrow, counting screen lines from w_cline_row.
      */
+    prev_wrow = curwin->w_wrow;
     curwin->w_wrow = curwin->w_cline_row;
 
     textwidth = curwin->w_width - extra;
@@ -1102,6 +1104,15 @@ curs_columns(
 	    && width > 0
 	    && curwin->w_width != 0)
     {
+	/* Adjust w_skipcol to multiples of width. */
+	if (curwin->w_skipcol % width != 0)
+	{
+	    extra = curwin->w_virtcol - (width - curwin_col_off2());
+	    if (extra > 0 && prev_wrow > 0)
+		extra -= prev_wrow * width;
+	    curwin->w_skipcol = (extra > 0)
+				? ((extra + width - 1) / width) * width : 0;
+	}
 	/* Cursor past end of screen.  Happens with a single line that does
 	 * not fit on screen.  Find a skipcol to show the text around the
 	 * cursor.  Avoid scrolling all the time. compute value of "extra":
