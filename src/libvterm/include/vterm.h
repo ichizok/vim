@@ -87,7 +87,7 @@ INLINE void vterm_rect_move(VTermRect *rect, int row_delta, int col_delta)
 #define VTERM_ANSI_INDEX_NONE 255	/* non-ANSI color, use red/green/blue */
 
 typedef struct {
-  uint8_t red, green, blue;
+  uint8_t red, green, blue, alpha;
   uint8_t ansi_index;
 } VTermColor;
 

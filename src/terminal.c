@@ -1717,7 +1717,11 @@ color2index(VTermColor *color, int fg, int *boldp)
     int red = color->red;
     int blue = color->blue;
     int green = color->green;
+    int alpha = color->alpha;
 
+    /* Pass through application color when alpha is 0. */
+    if (alpha == 0)
+	return 0;
     if (color->ansi_index != VTERM_ANSI_INDEX_NONE)
     {
 	/* First 16 colors and default: use the ANSI index, because these
@@ -2405,23 +2409,23 @@ term_get_attr(buf_T *buf, linenr_T lnum, int col)
 }
 
 static VTermColor ansi_table[16] = {
-  {  0,   0,   0,  1}, /* black */
-  {224,   0,   0,  2}, /* dark red */
-  {  0, 224,   0,  3}, /* dark green */
-  {224, 224,   0,  4}, /* dark yellow / brown */
-  {  0,   0, 224,  5}, /* dark blue */
-  {224,   0, 224,  6}, /* dark magenta */
-  {  0, 224, 224,  7}, /* dark cyan */
-  {224, 224, 224,  8}, /* light grey */
+  {  0,   0,   0, 255,  1}, /* black */
+  {224,   0,   0, 255,  2}, /* dark red */
+  {  0, 224,   0, 255,  3}, /* dark green */
+  {224, 224,   0, 255,  4}, /* dark yellow / brown */
+  {  0,   0, 224, 255,  5}, /* dark blue */
+  {224,   0, 224, 255,  6}, /* dark magenta */
+  {  0, 224, 224, 255,  7}, /* dark cyan */
+  {224, 224, 224, 255,  8}, /* light grey */
 
-  {128, 128, 128,  9}, /* dark grey */
-  {255,  64,  64, 10}, /* light red */
-  { 64, 255,  64, 11}, /* light green */
-  {255, 255,  64, 12}, /* yellow */
-  { 64,  64, 255, 13}, /* light blue */
-  {255,  64, 255, 14}, /* light magenta */
-  { 64, 255, 255, 15}, /* light cyan */
-  {255, 255, 255, 16}, /* white */
+  {128, 128, 128, 255,  9}, /* dark grey */
+  {255,  64,  64, 255, 10}, /* light red */
+  { 64, 255,  64, 255, 11}, /* light green */
+  {255, 255,  64, 255, 12}, /* yellow */
+  { 64,  64, 255, 255, 13}, /* light blue */
+  {255,  64, 255, 255, 14}, /* light magenta */
+  { 64, 255, 255, 255, 15}, /* light cyan */
+  {255, 255, 255, 255, 16}, /* white */
 };
 
 static int cube_value[] = {
@@ -2453,6 +2457,7 @@ cterm_color2rgb(int nr, VTermColor *rgb)
 	rgb->blue  = cube_value[idx      % 6];
 	rgb->green = cube_value[idx / 6  % 6];
 	rgb->red   = cube_value[idx / 36 % 6];
+	rgb->alpha = 255;
     }
     else if (nr < 256)
     {
@@ -2461,6 +2466,7 @@ cterm_color2rgb(int nr, VTermColor *rgb)
 	rgb->blue  = grey_ramp[idx];
 	rgb->green = grey_ramp[idx];
 	rgb->red   = grey_ramp[idx];
+	rgb->alpha = 255;
     }
 }
 
@@ -2503,6 +2509,7 @@ create_vterm(term_T *term, int rows, int cols)
     }
     fg->red = fg->green = fg->blue = fgval;
     bg->red = bg->green = bg->blue = bgval;
+    fg->alpha = bg->alpha = 0;
 
     /* The "Terminal" highlight group overrules the defaults. */
     id = syn_name2id((char_u *)"Terminal");
@@ -2551,6 +2558,7 @@ create_vterm(term_T *term, int rows, int cols)
 	    fg->red = (unsigned)(rgb >> 16);
 	    fg->green = (unsigned)(rgb >> 8) & 255;
 	    fg->blue = (unsigned)rgb & 255;
+	    fg->alpha = 255;
 	}
 	if (bg_rgb != INVALCOLOR)
 	{
@@ -2559,6 +2567,7 @@ create_vterm(term_T *term, int rows, int cols)
 	    bg->red = (unsigned)(rgb >> 16);
 	    bg->green = (unsigned)(rgb >> 8) & 255;
 	    bg->blue = (unsigned)rgb & 255;
+	    bg->alpha = 255;
 	}
     }
     else
@@ -2587,6 +2596,7 @@ create_vterm(term_T *term, int rows, int cols)
 	    tmp = fg->red;
 	    fg->red = fg->blue;
 	    fg->blue = tmp;
+	    fg->alpha = 255;
 # endif
 	}
 # ifdef FEAT_TERMRESPONSE
@@ -2601,6 +2611,7 @@ create_vterm(term_T *term, int rows, int cols)
 	    tmp = bg->red;
 	    bg->red = bg->blue;
 	    bg->blue = tmp;
+	    bg->alpha = 255;
 # endif
 	}
 # ifdef FEAT_TERMRESPONSE

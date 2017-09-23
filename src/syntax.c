@@ -9811,6 +9811,12 @@ syn_id2cterm_bg(int hl_id, int *fgp, int *bgp)
     struct hl_group	*sgp;
 
     hl_id = syn_get_final_id(hl_id);
+    if (hl_id == 0)
+    {
+	*fgp = -1;
+	*bgp = -1;
+	return;
+    }
     sgp = &HL_TABLE()[hl_id - 1];	    /* index is ID minus one */
     *fgp = sgp->sg_cterm_fg - 1;
     *bgp = sgp->sg_cterm_bg - 1;
