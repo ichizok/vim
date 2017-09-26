@@ -436,7 +436,8 @@ func Test_syntax_hangs()
   new
   call setline(1, ['aaa', repeat('abc ', 1000), 'ccc'])
   let start = reltime()
-  set nolazyredraw redrawtime=101
+  set nolazyredraw
+  setlocal syntimeout=101
   syn match Error /\%#=1a*.*X\@<=b*/
   redraw
   let elapsed = reltimefloat(reltime(start))
@@ -457,7 +458,6 @@ func Test_syntax_hangs()
   call assert_true(elapsed > 0.1)
   call assert_true(elapsed < 1.0)
 
-  set redrawtime&
   bwipe!
 endfunc
 
