@@ -2221,6 +2221,7 @@ struct file_buffer
     int		b_p_swf;	/* 'swapfile' */
 #ifdef FEAT_SYN_HL
     long	b_p_smc;	/* 'synmaxcol' */
+    long	b_p_sto;	/* 'syntimeout' */
     char_u	*b_p_syn;	/* 'syntax' */
 #endif
     long	b_p_ts;		/* 'tabstop' */

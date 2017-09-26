@@ -1079,6 +1079,7 @@ enum
     , BV_SN
 #ifdef FEAT_SYN_HL
     , BV_SMC
+    , BV_STO
     , BV_SYN
 #endif
 #ifdef FEAT_SPELL

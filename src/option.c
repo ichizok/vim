@@ -162,6 +162,7 @@
 #define PV_SN		OPT_BUF(BV_SN)
 #ifdef FEAT_SYN_HL
 # define PV_SMC		OPT_BUF(BV_SMC)
+# define PV_STO		OPT_BUF(BV_STO)
 # define PV_SYN		OPT_BUF(BV_SYN)
 #endif
 #ifdef FEAT_SPELL
@@ -364,6 +365,7 @@ static long	p_sw;
 static int	p_swf;
 #ifdef FEAT_SYN_HL
 static long	p_smc;
+static long	p_sto;
 static char_u	*p_syn;
 #endif
 #ifdef FEAT_SPELL
@@ -2653,6 +2655,15 @@ static struct vimoption options[] =
 #ifdef FEAT_SYN_HL
 			    (char_u *)&p_smc, PV_SMC,
 			    {(char_u *)3000L, (char_u *)0L}
+#else
+			    (char_u *)NULL, PV_NONE,
+			    {(char_u *)0L, (char_u *)0L}
+#endif
+			    SCRIPTID_INIT},
+    {"syntimeout",  "sto",  P_NUM|P_VI_DEF|P_RBUF,
+#ifdef FEAT_SYN_HL
+			    (char_u *)&p_sto, PV_STO,
+			    {(char_u *)2000L, (char_u *)0L}
 #else
 			    (char_u *)NULL, PV_NONE,
 			    {(char_u *)0L, (char_u *)0L}
@@ -10737,6 +10748,7 @@ get_varp(struct vimoption *p)
 	case PV_SWF:	return (char_u *)&(curbuf->b_p_swf);
 #ifdef FEAT_SYN_HL
 	case PV_SMC:	return (char_u *)&(curbuf->b_p_smc);
+	case PV_STO:	return (char_u *)&(curbuf->b_p_sto);
 	case PV_SYN:	return (char_u *)&(curbuf->b_p_syn);
 #endif
 #ifdef FEAT_SPELL
@@ -11121,6 +11133,7 @@ buf_copy_options(buf_T *buf, int flags)
 	    /* Don't copy 'syntax', it must be set */
 	    buf->b_p_syn = empty_option;
 	    buf->b_p_smc = p_smc;
+	    buf->b_p_sto = p_sto;
 	    buf->b_s.b_syn_isk = empty_option;
 #endif
 #ifdef FEAT_SPELL

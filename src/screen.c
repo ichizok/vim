@@ -928,8 +928,8 @@ update_single_line(win_T *wp, linenr_T lnum)
 				 && foldedCount(wp, lnum, &win_foldinfo) == 0)
     {
 #ifdef SYN_TIME_LIMIT
-	/* Set the time limit to 'redrawtime'. */
-	profile_setlimit(p_rdt, &syntax_tm);
+	/* Set the time limit to 'syntimeout'. */
+	profile_setlimit(wp->w_buffer->b_p_sto, &syntax_tm);
 	syn_set_timeout(&syntax_tm);
 #endif
 	update_prepare();
@@ -1802,8 +1802,8 @@ win_update(win_T *wp)
     got_int = 0;
 #endif
 #ifdef SYN_TIME_LIMIT
-    /* Set the time limit to 'redrawtime'. */
-    profile_setlimit(p_rdt, &syntax_tm);
+    /* Set the time limit to 'syntimeout'. */
+    profile_setlimit(wp->w_buffer->b_p_sto, &syntax_tm);
     syn_set_timeout(&syntax_tm);
 #endif
 #ifdef FEAT_FOLDING
