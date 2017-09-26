@@ -6016,14 +6016,10 @@ A jump table for the options with a short description can be found at |Q_op|.
 			{only available when compiled with the |+reltime|
 			feature}
 	The time in milliseconds for redrawing the display.  This applies to
-	searching for patterns for 'hlsearch', |:match| highlighting an syntax
-	highlighting.
+	searching for patterns for 'hlsearch' and |:match| highlighting.
 	When redrawing takes more than this many milliseconds no further
-	matches will be highlighted.
-	For syntax highlighting the time applies per window.  When over the
-	limit syntax highlighting is disabled until |CTRL-L| is used.
-	This is used to avoid that Vim hangs when using a very complicated
-	pattern.
+	matches will be highlighted.  This is used to avoid that Vim hangs
+	when using a very complicated pattern.
 
 						*'regexpengine'* *'re'*
 'regexpengine' 're'	number	(default 0)
@@ -7548,6 +7544,17 @@ A jump table for the options with a short description can be found at |Q_op|.
 	This option is not copied to another buffer, independent of the 's' or
 	'S' flag in 'cpoptions'.
 	Only normal file name characters can be used, "/\*?[|<>" are illegal.
+
+						*'syntimeout'* *'sto'*
+'syntimeout' 'sto'	number	(default 2000)
+			local to buffer
+			{not in Vi}
+			{not available when compiled without the |+syntax|
+			feature}
+ 	The time in milliseconds for syntax highlighting.  When over the limit
+	syntax highlighting is disabled until |CTRL-L| is used.
+	This is used to avoid that Vim hangs when using a very complicated
+	pattern.
 
 						*'tabline'* *'tal'*
 'tabline' 'tal'		string	(default empty)
