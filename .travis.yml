@@ -2,12 +2,12 @@ language: c
 dist: trusty
 
 os:
-  - osx
+  # - osx
   - linux
 
 compiler:
   - clang
-  - gcc
+  # - gcc
 
 env:
   - BUILD=yes TEST=test COVERAGE=no FEATURES=tiny  CONFOPT= SHADOWOPT= SRCDIR=./src CHECK_AUTOCONF=no
