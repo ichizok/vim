@@ -44,3 +44,14 @@ type ver_ming.txt
 echo "version output MVC"
 type ver_msvc.txt
 cd ..
+
+:: Install winpty
+set WINPTY_URL=https://github.com/rprichard/winpty/releases/download/0.4.3/winpty-0.4.3-msvc2015.zip
+set WINPTY_ZIP=winpty.zip
+if "%FEATURE%" == "HUGE" (
+    echo "Installing winpty for testing"
+    if not exist %WINPTY_ZIP% (
+        curl -f -L %WINPTY_URL% -o %WINPTY_ZIP% || exit 1
+    )
+    7z x -y %WINPTY_ZIP% -oc:\winpty
+)
