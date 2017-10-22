@@ -136,6 +136,7 @@ script:
       "${SRCDIR}"/vim --version
       "${SRCDIR}"/vim -u NONE -i NONE --not-a-term -esNX -V1 -S ci/if_ver-1.vim -c quit
       "${SRCDIR}"/vim -u NONE -i NONE --not-a-term -esNX -V1 -S ci/if_ver-2.vim -c quit
+      "${SRCDIR}"/vim -u NONE -i NONE --not-a-term -esNX -V1 -S ci/measure-time.vim -c quit
     fi
   - echo -e "\\033[33;1mTesting Vim\\033[0m" && echo -en "travis_fold:start:test\\r\\033[0K"
   - do_test make ${SHADOWOPT} ${TEST} && FOLD_MARKER=travis_fold
