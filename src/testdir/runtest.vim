@@ -47,15 +47,15 @@ so small.vim
 
 " Check that the screen size is at least 24 x 80 characters.
 if &lines < 24 || &columns < 80 
-  let error = 'Screen size too small! Tests require at least 24 lines with 80 characters, got ' .. &lines .. ' lines with ' .. &columns .. ' characters'
-  echoerr error
+  let s:error = 'Screen size too small! Tests require at least 24 lines with 80 characters, got ' .. &lines .. ' lines with ' .. &columns .. ' characters'
+  echoerr s:error
   split test.log
-  $put =error
+  $put =s:error
   write
   split messages
   call append(line('$'), '')
   call append(line('$'), 'From ' . expand('%') . ':')
-  call append(line('$'), error)
+  call append(line('$'), s:error)
   write
   qa!
 endif
@@ -109,7 +109,7 @@ let s:srcdir = expand('%:p:h:h')
 let v:testing = 1
 
 " Support function: get the alloc ID by name.
-function GetAllocId(name)
+func GetAllocId(name)
   exe 'split ' . s:srcdir . '/alloc.h'
   let top = search('typedef enum')
   if top == 0
@@ -121,6 +121,30 @@ function GetAllocId(name)
   endif
   close
   return lnum - top - 1
+endfunc
+
+" Calibrate a elapsed time on CI system.
+let s:calibration_factor = 1.0
+
+func CalibrativeSleep(sec)
+  if $CI != '' && has('mac')
+    let start = reltime()
+    for _ in range(a:sec * 10)
+      sleep 100m
+    endfor
+    let elapsed = reltimefloat(reltime(start))
+    " Trick: use 1100ms, an expected value on no-load
+    let x = (a:sec * 1100) / (elapsed * 1000)
+    let s:calibration_factor = x > 1.0 ? 1.0 : x
+    call add(s:messages, printf('Calibration factor: %f', s:calibration_factor))
+  else
+    exe 'sleep' a:sec
+  endif
+endfunc
+
+" Calibrated reltimefloat().
+func Reltimefloat(time)
+  return reltimefloat(a:time) * s:calibration_factor
 endfunc
 
 func RunTheTest(test)
@@ -402,9 +426,10 @@ endif
 for g:testfunc in sort(s:tests)
   " Silence, please!
   set belloff=all
-  let prev_error = ''
-  let total_errors = []
+  let s:prev_error = ''
+  let s:total_errors = []
   let g:run_nr = 1
+  let s:calibration_factor = 1.0
 
   " A test can set g:test_is_flaky to retry running the test.
   let g:test_is_flaky = 0
@@ -421,12 +446,12 @@ for g:testfunc in sort(s:tests)
       call add(s:messages, 'Found errors in ' . g:testfunc . ':')
       call extend(s:messages, v:errors)
 
-      call add(total_errors, 'Run ' . g:run_nr . ':')
-      call extend(total_errors, v:errors)
+      call add(s:total_errors, 'Run ' . g:run_nr . ':')
+      call extend(s:total_errors, v:errors)
 
-      if g:run_nr == 5 || prev_error == v:errors[0]
-        call add(total_errors, 'Flaky test failed too often, giving up')
-        let v:errors = total_errors
+      if g:run_nr == 5 || s:prev_error == v:errors[0]
+        call add(s:total_errors, 'Flaky test failed too often, giving up')
+        let v:errors = s:total_errors
         break
       endif
 
@@ -435,9 +460,9 @@ for g:testfunc in sort(s:tests)
       " Flakiness is often caused by the system being very busy.  Sleep a
       " couple of seconds to have a higher chance of succeeding the second
       " time.
-      sleep 2
+      call CalibrativeSleep(2)
 
-      let prev_error = v:errors[0]
+      let s:prev_error = v:errors[0]
       let v:errors = []
       let g:run_nr += 1
 
