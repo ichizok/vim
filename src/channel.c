@@ -1636,30 +1636,39 @@ channel_get_all(channel_T *channel, ch_part_T part)
     char_u  *res;
     char_u  *p;
 
-    /* If there is only one buffer just get that one. */
-    if (head->rq_next == NULL || head->rq_next->rq_next == NULL)
-	return channel_get(channel, part);
-
-    /* Concatenate everything into one buffer. */
-    for (node = head->rq_next; node != NULL; node = node->rq_next)
-	len += node->rq_buflen;
-    res = lalloc(len + 1, TRUE);
-    if (res == NULL)
+    if (node == NULL)
 	return NULL;
-    p = res;
-    for (node = head->rq_next; node != NULL; node = node->rq_next)
-    {
-	mch_memmove(p, node->rq_buffer, node->rq_buflen);
-	p += node->rq_buflen;
-    }
-    *p = NUL;
 
-    /* Free all buffers */
-    do
+    if (node->rq_next == NULL)
     {
-	p = channel_get(channel, part);
-	vim_free(p);
-    } while (p != NULL);
+	/* If there is only one buffer just get that one. */
+	len = node->rq_buflen;
+	res = channel_get(channel, part);
+	res[len] = NUL;
+    }
+    else
+    {
+	/* Concatenate everything into one buffer. */
+	for (node = head->rq_next; node != NULL; node = node->rq_next)
+	    len += node->rq_buflen;
+	res = lalloc(len + 1, TRUE);
+	if (res == NULL)
+	    return NULL;
+	p = res;
+	for (node = head->rq_next; node != NULL; node = node->rq_next)
+	{
+	    mch_memmove(p, node->rq_buffer, node->rq_buflen);
+	    p += node->rq_buflen;
+	}
+	*p = NUL;
+
+	/* Free all buffers */
+	do
+	{
+	    p = channel_get(channel, part);
+	    vim_free(p);
+	} while (p != NULL);
+    }
 
     /* turn all NUL into NL */
     while (len > 0)
@@ -3317,7 +3326,7 @@ channel_read(channel_T *channel, ch_part_T part, char *func)
  * Returns NULL in case of error or timeout.
  */
     char_u *
-channel_read_block(channel_T *channel, ch_part_T part, int timeout)
+channel_read_block(channel_T *channel, ch_part_T part, int timeout, int raw)
 {
     char_u	*buf;
     char_u	*msg;
@@ -3326,16 +3335,17 @@ channel_read_block(channel_T *channel, ch_part_T part, int timeout)
     char_u	*nl;
     readq_T	*node;
 
+    raw = raw || mode == MODE_RAW;
+
     ch_log(channel, "Blocking %s read, timeout: %d msec",
-				    mode == MODE_RAW ? "RAW" : "NL", timeout);
+						 raw ? "RAW" : "NL", timeout);
 
     while (TRUE)
     {
 	node = channel_peek(channel, part);
 	if (node != NULL)
 	{
-	    if (mode == MODE_RAW || (mode == MODE_NL
-					   && channel_first_nl(node) != NULL))
+	    if (raw || (mode == MODE_NL && channel_first_nl(node) != NULL))
 		/* got a complete message */
 		break;
 	    if (channel_collapse(channel, part, mode == MODE_NL) == OK)
@@ -3354,10 +3364,8 @@ channel_read_block(channel_T *channel, ch_part_T part, int timeout)
     }
 
     /* We have a complete message now. */
-    if (mode == MODE_RAW)
-    {
+    if (raw)
 	msg = channel_get_all(channel, part);
-    }
     else
     {
 	char_u *p;
@@ -3508,12 +3516,14 @@ common_channel_read(typval_T *argvars, typval_T *rettv, int raw)
 	if (part == PART_COUNT)
 	    part = channel_part_read(channel);
 	mode = channel_get_mode(channel, part);
+	raw = raw || mode == MODE_RAW;
 	timeout = channel_get_timeout(channel, part);
 	if (opt.jo_set & JO_TIMEOUT)
 	    timeout = opt.jo_timeout;
 
-	if (raw || mode == MODE_RAW || mode == MODE_NL)
-	    rettv->vval.v_string = channel_read_block(channel, part, timeout);
+	if (raw || mode == MODE_NL)
+	    rettv->vval.v_string = channel_read_block(channel, part,
+								timeout, raw);
 	else
 	{
 	    if (opt.jo_set & JO_ID)
@@ -3955,7 +3965,8 @@ ch_raw_common(typval_T *argvars, typval_T *rettv, int eval)
 	    timeout = opt.jo_timeout;
 	else
 	    timeout = channel_get_timeout(channel, part_read);
-	rettv->vval.v_string = channel_read_block(channel, part_read, timeout);
+	rettv->vval.v_string = channel_read_block(channel, part_read,
+							      timeout, FALSE);
     }
     free_job_options(&opt);
 }

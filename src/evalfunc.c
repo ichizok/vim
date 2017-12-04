@@ -94,6 +94,8 @@ static void f_ch_info(typval_T *argvars, typval_T *rettv);
 static void f_ch_log(typval_T *argvars, typval_T *rettv);
 static void f_ch_logfile(typval_T *argvars, typval_T *rettv);
 static void f_ch_open(typval_T *argvars, typval_T *rettv);
+static void f_ch_peek(typval_T *argvars, typval_T *rettv);
+static void f_ch_peekraw(typval_T *argvars, typval_T *rettv);
 static void f_ch_read(typval_T *argvars, typval_T *rettv);
 static void f_ch_readraw(typval_T *argvars, typval_T *rettv);
 static void f_ch_sendexpr(typval_T *argvars, typval_T *rettv);
@@ -533,6 +535,8 @@ static struct fst
     {"ch_log",		1, 2, f_ch_log},
     {"ch_logfile",	1, 2, f_ch_logfile},
     {"ch_open",		1, 2, f_ch_open},
+    {"ch_peek",		1, 2, f_ch_peek},
+    {"ch_peekraw",	1, 2, f_ch_peekraw},
     {"ch_read",		1, 2, f_ch_read},
     {"ch_readraw",	1, 2, f_ch_readraw},
     {"ch_sendexpr",	2, 3, f_ch_sendexpr},
@@ -1988,6 +1992,71 @@ f_ch_open(typval_T *argvars, typval_T *rettv)
     if (check_restricted() || check_secure())
 	return;
     rettv->vval.v_channel = channel_open_func(argvars);
+}
+
+/*
+ * "ch_peek()" function
+ */
+    static void
+f_ch_peek(typval_T *argvars, typval_T *rettv)
+{
+    channel_T	*channel;
+    ch_mode_T	ch_mode;
+    int		part = PART_COUNT;
+
+    channel = get_channel_arg(&argvars[0], FALSE, FALSE, 0);
+
+    if (argvars[1].v_type != VAR_UNKNOWN)
+    {
+	jobopt_T opt;
+
+	clear_job_options(&opt);
+	if (get_job_options(&argvars[1], &opt, JO_PART, 0) == OK
+						     && (opt.jo_set & JO_PART))
+	    part = opt.jo_part;
+    }
+    if (part == PART_COUNT)
+	part = channel_part_read(channel);
+
+    ch_mode = channel->ch_part[part].ch_mode;
+
+    rettv->v_type = VAR_NUMBER;
+    if (ch_mode == MODE_JSON || ch_mode == MODE_JS)
+	rettv->vval.v_number = channel_has_readahead(channel, part);
+    else
+    {
+	readq_T *node = channel_peek(channel, part);
+
+	rettv->vval.v_number = node != NULL
+		    && (ch_mode == MODE_RAW || channel_first_nl(node) != NULL);
+    }
+}
+
+/*
+ * "ch_peekraw()" function
+ */
+    static void
+f_ch_peekraw(typval_T *argvars, typval_T *rettv)
+{
+    channel_T	*channel;
+    int		part = PART_COUNT;
+
+    channel = get_channel_arg(&argvars[0], FALSE, FALSE, 0);
+
+    if (argvars[1].v_type != VAR_UNKNOWN)
+    {
+	jobopt_T opt;
+
+	clear_job_options(&opt);
+	if (get_job_options(&argvars[1], &opt, JO_PART, 0) == OK
+						     && (opt.jo_set & JO_PART))
+	    part = opt.jo_part;
+    }
+    if (part == PART_COUNT)
+	part = channel_part_read(channel);
+
+    rettv->v_type = VAR_NUMBER;
+    rettv->vval.v_number = channel_peek(channel, part) != NULL;
 }
 
 /*
