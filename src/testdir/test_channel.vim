@@ -505,17 +505,17 @@ func Test_nl_pipe()
   try
     let handle = job_getchannel(job)
     call ch_sendraw(handle, "echo something\n")
-    call assert_equal("something", ch_readraw(handle))
+    call assert_equal("something", ch_read(handle))
 
     call ch_sendraw(handle, "echoerr wrong\n")
-    call assert_equal("wrong", ch_readraw(handle, {'part': 'err'}))
+    call assert_equal("wrong", ch_read(handle, {'part': 'err'}))
 
     call ch_sendraw(handle, "double this\n")
-    call assert_equal("this", ch_readraw(handle))
-    call assert_equal("AND this", ch_readraw(handle))
+    call assert_equal("this", ch_read(handle))
+    call assert_equal("AND this", ch_read(handle))
 
     call ch_sendraw(handle, "split this line\n")
-    call assert_equal("this linethis linethis line", ch_readraw(handle))
+    call assert_equal("this linethis linethis line", ch_read(handle))
 
     let reply = ch_evalraw(handle, "quit\n")
     call assert_equal("Goodbye!", reply)
@@ -535,10 +535,10 @@ func Test_nl_err_to_out_pipe()
   try
     let handle = job_getchannel(job)
     call ch_sendraw(handle, "echo something\n")
-    call assert_equal("something", ch_readraw(handle))
+    call assert_equal("something", ch_read(handle))
 
     call ch_sendraw(handle, "echoerr wrong\n")
-    call assert_equal("wrong", ch_readraw(handle))
+    call assert_equal("wrong", ch_read(handle))
   finally
     call job_stop(job)
     call ch_logfile('')
@@ -593,10 +593,10 @@ func Test_nl_read_file()
   call assert_equal("run", job_status(g:job))
   try
     let handle = job_getchannel(g:job)
-    call assert_equal("something", ch_readraw(handle))
-    call assert_equal("wrong", ch_readraw(handle, {'part': 'err'}))
-    call assert_equal("this", ch_readraw(handle))
-    call assert_equal("AND this", ch_readraw(handle))
+    call assert_equal("something", ch_read(handle))
+    call assert_equal("wrong", ch_read(handle, {'part': 'err'}))
+    call assert_equal("this", ch_read(handle))
+    call assert_equal("AND this", ch_read(handle))
   finally
     call Stop_g_job()
     call delete('Xinput')
@@ -1151,7 +1151,7 @@ func Test_reuse_channel()
   let handle = job_getchannel(job)
   try
     call ch_sendraw(handle, "echo something\n")
-    call assert_equal("something", ch_readraw(handle))
+    call assert_equal("something", ch_read(handle))
   finally
     call job_stop(job)
   endtry
@@ -1161,7 +1161,7 @@ func Test_reuse_channel()
   let handle = job_getchannel(job)
   try
     call ch_sendraw(handle, "echo again\n")
-    call assert_equal("again", ch_readraw(handle))
+    call assert_equal("again", ch_read(handle))
   finally
     call job_stop(job)
   endtry
@@ -1780,3 +1780,27 @@ func Test_list_args()
   call s:test_list_args('print("hello\"world\"")', 'hello"world"', 1)
   call s:test_list_args('print("hello\tworld")', "hello\tworld", 1)
 endfunc
+
+func Test_peek_chennal()
+  if !has('job')
+    return
+  endif
+  call ch_log('Test_peek_chennal()')
+  let g:job = job_start([s:python, '-c', 'import sys;sys.stdout.write("foo\nbar\nbaz")'])
+  call assert_equal("run", job_status(g:job))
+  try
+    call assert_equal("foo", ch_read(g:job))
+    call assert_true(ch_peek(g:job))
+    call assert_true(ch_peekraw(g:job))
+    call assert_equal("bar", ch_read(g:job))
+    call assert_false(ch_peek(g:job))
+    call assert_true(ch_peekraw(g:job))
+    call assert_equal("", ch_read(g:job))
+    call assert_equal("baz", ch_readraw(g:job))
+    call assert_false(ch_peek(g:job))
+    call assert_false(ch_peekraw(g:job))
+  finally
+    call Stop_g_job()
+  endtry
+endfunc
+
