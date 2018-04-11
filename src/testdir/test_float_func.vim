@@ -316,6 +316,18 @@ func Test_float_misc()
   let v = 1.234
   call assert_true(v == 1.234)
   call assert_false(v == 1.2341)
+  let v = 1
+  let v += 0.001
+  let v -= 0.001
+  call assert_true(v == 1.0)
+  call assert_true(0.15 + 0.15 == 0.2 + 0.1)
+  " == (inf, nan)
+  call assert_true(1.0/0.0 == 1.0/0.0)
+  call assert_true(-1.0/0.0 == -1.0/0.0)
+  call assert_false(1.0/0.0 == -1.0/0.0)
+  call assert_false(0.0/0.0 == 0.0/0.0)
+  call assert_false(0.0/0.0 == 1.0/0.0)
+  call assert_false(0.0/0.0 == -1.0/0.0)
   " add-subtract
   call assert_equal('5.234', printf('%g', 4 + 1.234))
   call assert_equal('-6.766', printf('%g', 1.234 - 8))
