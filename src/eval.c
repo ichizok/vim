@@ -5807,11 +5807,17 @@ string2float(
     int
 float_equal(float_T x, float_T y)
 {
-    float_T	delta = fabs(x - y);
-    float_T	ax = fabs(x);
-    float_T	ay = fabs(y);
+    if (isnan(x) || isnan(y) || isinf(x) || isinf(y))
+	return x == y;
+    else
+    {
+	float_T delta = fabs(x - y);
+	float_T ax = fabs(x);
+	float_T ay = fabs(y);
 
-    return delta <= DBL_EPSILON || delta <= DBL_EPSILON * (ax > ay ? ax : ay);
+	return delta <= DBL_EPSILON
+				|| delta <= DBL_EPSILON * (ax > ay ? ax : ay);
+    }
 }
 #endif
 
