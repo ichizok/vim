@@ -3134,7 +3134,7 @@ f_empty(typval_T *argvars, typval_T *rettv)
 	    break;
 	case VAR_FLOAT:
 #ifdef FEAT_FLOAT
-	    n = argvars[0].vval.v_float == 0.0;
+	    n = float_equal(argvars[0].vval.v_float, 0.0);
 	    break;
 #endif
 	case VAR_LIST:
@@ -11716,7 +11716,7 @@ item_compare(const void *s1, const void *s2)
 	float_T	v1 = tv_get_float(tv1);
 	float_T	v2 = tv_get_float(tv2);
 
-	return v1 == v2 ? 0 : v1 > v2 ? 1 : -1;
+	return float_equal(v1, v2) ? 0 : v1 > v2 ? 1 : -1;
     }
 #endif
 

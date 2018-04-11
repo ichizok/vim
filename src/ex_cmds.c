@@ -350,7 +350,7 @@ sort_compare(const void *s1, const void *s2)
 				 : l1.st_u.value > l2.st_u.value ? 1 : -1;
 #ifdef FEAT_FLOAT
     else if (sort_flt)
-	result = l1.st_u.value_flt == l2.st_u.value_flt ? 0
+	result = float_equal(l1.st_u.value_flt, l2.st_u.value_flt) ? 0
 			     : l1.st_u.value_flt > l2.st_u.value_flt ? 1 : -1;
 #endif
     else

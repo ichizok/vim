@@ -4983,7 +4983,7 @@ tv_equal(
 
 	case VAR_FLOAT:
 #ifdef FEAT_FLOAT
-	    return tv1->vval.v_float == tv2->vval.v_float;
+	    return float_equal(tv1->vval.v_float, tv2->vval.v_float);
 #endif
 	case VAR_JOB:
 #ifdef FEAT_JOB_CHANNEL
@@ -5798,6 +5798,20 @@ string2float(
     f = strtod(s, &s);
     *value = f;
     return (int)((char_u *)s - text);
+}
+
+/*
+ * Compare two floating point numbers.
+ * Return TRUE when the values of them can be regarded as the same.
+ */
+    int
+float_equal(float_T x, float_T y)
+{
+    float_T	delta = fabs(x - y);
+    float_T	ax = fabs(x);
+    float_T	ay = fabs(y);
+
+    return delta <= DBL_EPSILON || delta <= DBL_EPSILON * (ax > ay ? ax : ay);
 }
 #endif
 
@@ -9362,12 +9376,12 @@ typval_compare(
 	n1 = FALSE;
 	switch (type)
 	{
-	    case TYPE_EQUAL:    n1 = (f1 == f2); break;
-	    case TYPE_NEQUAL:   n1 = (f1 != f2); break;
+	    case TYPE_EQUAL:    n1 = float_equal(f1, f2); break;
+	    case TYPE_NEQUAL:   n1 = !float_equal(f1, f2); break;
 	    case TYPE_GREATER:  n1 = (f1 > f2); break;
-	    case TYPE_GEQUAL:   n1 = (f1 >= f2); break;
+	    case TYPE_GEQUAL:   n1 = (f1 > f2 || float_equal(f1, f2)); break;
 	    case TYPE_SMALLER:  n1 = (f1 < f2); break;
-	    case TYPE_SEQUAL:   n1 = (f1 <= f2); break;
+	    case TYPE_SEQUAL:   n1 = (f1 < f2 || float_equal(f1, f2)); break;
 	    case TYPE_UNKNOWN:
 	    case TYPE_MATCH:
 	    case TYPE_NOMATCH:  break;  /* avoid gcc warning */
