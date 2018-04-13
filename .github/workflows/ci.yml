@@ -227,6 +227,17 @@ jobs:
             false # in order to fail a job
           done
 
+      - name: Upload log
+        if: failure()
+        env:
+          AWS_ACCESS_KEY_ID:  ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY:  ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION:  ${{ secrets.AWS_DEFAULT_REGION }}
+          AWS_ARTIFACT_BUCKET: ichizok-ci-log
+          CI_REPOSITORY: github/${{ github.repository }}
+          CI_LOG_NAME: ${{ github.run_number }}/linux-${{ matrix.features }}-${{ matrix.compiler }}-${{ matrix.extra }}.tgz
+        run: bash ci/upload-log.sh
+
   coveralls:
     runs-on: ubuntu-18.04
 
@@ -306,6 +317,17 @@ jobs:
         timeout-minutes: 20
         run: |
           make ${TEST}
+
+      - name: Upload log
+        if: failure()
+        env:
+          AWS_ACCESS_KEY_ID:  ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY:  ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION:  ${{ secrets.AWS_DEFAULT_REGION }}
+          AWS_ARTIFACT_BUCKET: ichizok-ci-log
+          CI_REPOSITORY: github/${{ github.repository }}
+          CI_LOG_NAME: ${{ github.run_number }}/macos-${{ matrix.features }}-${{ matrix.compiler }}.tgz
+        run: bash ci/upload-log.sh
 
   windows:
     runs-on: windows-latest
