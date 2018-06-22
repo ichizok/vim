@@ -4238,7 +4238,7 @@ set_child_environment(
     }
 #  endif
 #  ifdef FEAT_CLIENTSERVER
-    setenv("VIM_SERVERNAME", serverName == NULL ? "" : (char *)serverName, 1);
+    setenv("VIM_SERVERNAME", (char *)EMPTY_IF_NULL(serverName), 1);
 #  endif
 # else
     /*
@@ -4267,7 +4267,7 @@ set_child_environment(
 #  endif
 #  ifdef FEAT_CLIENTSERVER
     vim_snprintf(envbuf_Servername, sizeof(envbuf_Servername),
-	    "VIM_SERVERNAME=%s", serverName == NULL ? "" : (char *)serverName);
+		       "VIM_SERVERNAME=%s", (char *)EMPTY_IF_NULL(serverName));
     putenv(envbuf_Servername);
 #  endif
 # endif
@@ -4506,7 +4506,7 @@ mch_call_shell_system(
 	else
 	{
 	    sprintf((char *)newcmd, "%s %s %s %s", p_sh,
-		    extra_shell_arg == NULL ? "" : (char *)extra_shell_arg,
+		    (char *)EMPTY_IF_NULL(extra_shell_arg),
 		    (char *)p_shcf,
 		    (char *)cmd);
 	    x = system((char *)newcmd);

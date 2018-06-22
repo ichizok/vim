@@ -4451,7 +4451,7 @@ theend:
 delbuf_msg(char_u *name)
 {
     EMSG2(_("E143: Autocommands unexpectedly deleted new buffer %s"),
-	    name == NULL ? (char_u *)"" : name);
+	    EMPTY_IF_NULL(name));
     vim_free(name);
     au_new_curbuf.br_buf = NULL;
     au_new_curbuf.br_buf_free_count = 0;

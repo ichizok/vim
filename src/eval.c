@@ -1585,7 +1585,7 @@ list_arg_vars(exarg_T *eap, char_u *arg, int *first)
 			    list_one_var_a((char_u *)"",
 				    arg == arg_subsc ? name : name_start,
 				    tv.v_type,
-				    s == NULL ? (char_u *)"" : s,
+				    EMPTY_IF_NULL(s),
 				    first);
 			    *arg = c;
 			    vim_free(tf);
@@ -7063,7 +7063,7 @@ get_tv_string_buf(typval_T *varp, char_u *buf)
 {
     char_u	*res =  get_tv_string_buf_chk(varp, buf);
 
-    return res != NULL ? res : (char_u *)"";
+    return EMPTY_IF_NULL(res);
 }
 
 /*
@@ -7442,7 +7442,7 @@ list_one_var(dictitem_T *v, char_u *prefix, int *first)
 
     s = echo_string(&v->di_tv, &tofree, numbuf, get_copyID());
     list_one_var_a(prefix, v->di_key, v->di_tv.v_type,
-					 s == NULL ? (char_u *)"" : s, first);
+						     EMPTY_IF_NULL(s), first);
     vim_free(tofree);
 }
 

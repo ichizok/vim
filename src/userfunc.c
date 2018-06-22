@@ -2062,7 +2062,7 @@ ex_function(exarg_T *eap)
 	    if (current_funccal == NULL)
 	    {
 		emsg_funcname(N_("E932: Closure function should not be at top level: %s"),
-			name == NULL ? (char_u *)"" : name);
+			EMPTY_IF_NULL(name));
 		goto erret;
 	    }
 	}

@@ -538,8 +538,7 @@ throw_exception(void *value, except_type_T type, char_u *cmdname)
 	goto nomem;
 
     excp->type = type;
-    excp->throw_name = vim_strsave(sourcing_name == NULL
-					      ? (char_u *)"" : sourcing_name);
+    excp->throw_name = vim_strsave(EMPTY_IF_NULL(sourcing_name));
     if (excp->throw_name == NULL)
     {
 	if (should_free)

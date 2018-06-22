@@ -1105,8 +1105,7 @@ ui_post_balloon(char_u *mesg, list_T *list)
 	{
 	    char_u *text = get_tv_string_chk(&li->li_tv);
 
-	    balloon_array[idx].pum_text = vim_strsave(
-					   text == NULL ? (char_u *)"" : text);
+	    balloon_array[idx].pum_text = vim_strsave(EMPTY_IF_NULL(text));
 	}
     }
     else

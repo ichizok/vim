@@ -6355,8 +6355,7 @@ ConvertToPyObject(typval_T *tv)
 	case VAR_DICT:
 	    return NEW_DICTIONARY(tv->vval.v_dict);
 	case VAR_FUNC:
-	    return NEW_FUNCTION(tv->vval.v_string == NULL
-					  ? (char_u *)"" : tv->vval.v_string,
+	    return NEW_FUNCTION(EMPTY_IF_NULL(tv->vval.v_string),
 					  0, NULL, NULL, TRUE);
 	case VAR_PARTIAL:
 	    if (tv->vval.v_partial->pt_argc)

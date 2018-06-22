@@ -204,7 +204,7 @@ cursor_color_copy(char_u **to_color, char_u *from_color)
     static char_u *
 cursor_color_get(char_u *color)
 {
-    return (color == NULL) ? (char_u *)"" : color;
+    return EMPTY_IF_NULL(color);
 }
 
 

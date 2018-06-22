@@ -4239,7 +4239,7 @@ expand_by_function(
     args[0].v_type = VAR_NUMBER;
     args[0].vval.v_number = 0;
     args[1].v_type = VAR_STRING;
-    args[1].vval.v_string = base != NULL ? base : (char_u *)"";
+    args[1].vval.v_string = EMPTY_IF_NULL(base);
     args[2].v_type = VAR_UNKNOWN;
 
     pos = curwin->w_cursor;
