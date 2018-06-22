@@ -4711,7 +4711,7 @@ f_term_getattr(typval_T *argvars, typval_T *rettv)
     for (i = 0; i < sizeof(attrs)/sizeof(attrs[0]); ++i)
 	if (STRCMP(name, attrs[i].name) == 0)
 	{
-	    rettv->vval.v_number = (attr & attrs[i].attr) != 0 ? 1 : 0;
+	    rettv->vval.v_number = TO_BOOL((attr & attrs[i].attr) != 0);
 	    break;
 	}
 }

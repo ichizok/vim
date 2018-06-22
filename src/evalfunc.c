@@ -7615,12 +7615,12 @@ get_maparg(typval_T *argvars, typval_T *rettv, int exact)
 
 	dict_add_string(dict, "lhs", lhs);
 	dict_add_string(dict, "rhs", mp->m_orig_str);
-	dict_add_number(dict, "noremap", mp->m_noremap ? 1L : 0L);
-	dict_add_number(dict, "expr", mp->m_expr ? 1L : 0L);
-	dict_add_number(dict, "silent", mp->m_silent ? 1L : 0L);
+	dict_add_number(dict, "noremap", TO_BOOL(mp->m_noremap));
+	dict_add_number(dict, "expr", TO_BOOL(mp->m_expr));
+	dict_add_number(dict, "silent", TO_BOOL(mp->m_silent));
 	dict_add_number(dict, "sid", (long)mp->m_script_ID);
 	dict_add_number(dict, "buffer", (long)buffer_local);
-	dict_add_number(dict, "nowait", mp->m_nowait ? 1L : 0L);
+	dict_add_number(dict, "nowait", TO_BOOL(mp->m_nowait));
 	dict_add_string(dict, "mode", mapmode);
 
 	vim_free(lhs);

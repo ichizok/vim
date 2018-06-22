@@ -130,6 +130,9 @@
 /* Returns empty string if it is NULL. */
 #define EMPTY_IF_NULL(x) ((x) ? (x) : (char_u *)"")
 
+/* Returns boolean-like value. */
+#define TO_BOOL(x) ((x) ? 1 : 0)
+
 #ifdef FEAT_LANGMAP
 /*
  * Adjust chars in a language according to 'langmap' option.

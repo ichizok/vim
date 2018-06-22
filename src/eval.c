@@ -6973,7 +6973,7 @@ get_tv_number_chk(typval_T *varp, int *denote)
 	    EMSG(_("E728: Using a Dictionary as a Number"));
 	    break;
 	case VAR_SPECIAL:
-	    return varp->vval.v_number == VVAL_TRUE ? 1 : 0;
+	    return TO_BOOL(varp->vval.v_number == VVAL_TRUE);
 	    break;
 	case VAR_JOB:
 #ifdef FEAT_JOB_CHANNEL

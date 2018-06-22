@@ -4823,7 +4823,7 @@ call_imactivatefunc(int active)
     typval_T argv[2];
 
     argv[0].v_type = VAR_NUMBER;
-    argv[0].vval.v_number = active ? 1 : 0;
+    argv[0].vval.v_number = TO_BOOL(active);
     argv[1].v_type = VAR_UNKNOWN;
     (void)call_func_retnr(p_imaf, 1, argv);
 }
