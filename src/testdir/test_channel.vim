@@ -1855,3 +1855,29 @@ func Test_keep_pty_open()
   call assert_inrange(200, 1000, elapsed)
   call job_stop(job)
 endfunc
+
+func Test_dangerous_callback()
+  if !has('terminal')
+    return
+  endif
+
+  call writefile([
+        \ 'set rtp=',
+        \ 'function! ExitCb(job, st, ...)',
+        \ '  exe g:buf "bwipe!"',
+        \ 'endfunction',
+        \ 'set cursorline lazyredraw',
+        \ 'new',
+        \ 'let g:buf = bufnr("")',
+        \ 'call job_start("echo .", {"exit_cb": "ExitCb"})',
+        \ 'call feedkeys(repeat("g", 1000) . "o", "nt")',
+        \ ], 'Xtest.vim')
+
+  let buf = term_start([GetVimProg(), '--clean', '-Nu', 'NONE', '-S', 'Xtest.vim'])
+  let job = term_getjob(buf)
+  sleep 1
+  call assert_equal('run', job_status(job))
+
+  call delete('Xtest.vim')
+  bwipe!
+endfunc
