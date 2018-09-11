@@ -1530,7 +1530,7 @@ WaitForChar(long msec, int ignore_input)
     for (;;)
     {
 	// Only process messages when waiting.
-	if (msec != 0)
+	// if (msec != 0)
 	{
 #ifdef MESSAGE_QUEUE
 	    parse_queued_messages();

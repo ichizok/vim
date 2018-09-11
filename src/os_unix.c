@@ -418,7 +418,7 @@ mch_inchar(
 
 #ifdef MESSAGE_QUEUE
 	// Only process messages when waiting.
-	if (wtime != 0)
+	// if (wtime != 0)
 	{
 	    parse_queued_messages();
 	    // If input was put directly in typeahead buffer bail out here.
