@@ -494,7 +494,7 @@ endif
 #>>>>> end of choices
 ###########################################################################
 
-CFLAGS = -Iproto $(DEFINES) -pipe -march=$(ARCH) -Wall
+CFLAGS = -I. -Iproto $(DEFINES) -pipe -march=$(ARCH) -Wall
 CXXFLAGS = -std=gnu++11
 WINDRES_FLAGS = --preprocessor="$(WINDRES_CC) -E -xc" -DRC_INVOKED
 EXTRA_LIBS =
