@@ -1243,6 +1243,19 @@ func Test_reg_executing_and_recording()
   unlet g:typed
   unlet g:regs
 
+  " Distinguish register-executing and mapping key
+  map W :call TestFunc()<CR>
+  let @q = "W"
+  let g:regs = []
+  func TestFunc() abort
+    let g:regs += [reg_executing()]
+  endfunc
+  normal @qW
+  call assert_equal(['q', ''], g:regs)
+  delfunc TestFunc
+  unmap W
+  unlet g:regs
+
   bwipe!
   delfunc s:save_reg_stat
   unlet s:reg_stat
