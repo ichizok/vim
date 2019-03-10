@@ -1628,6 +1628,11 @@ vgetc(void)
 		}
 		c = TO_SPECIAL(c2, c);
 
+		if (c == K_REGSTOP)
+		{
+		    reg_executing = 0;
+		    c = K_IGNORE;
+		}
 #if defined(FEAT_GUI_MSWIN) && defined(FEAT_MENU) && defined(FEAT_TEAROFF)
 		// Handle K_TEAROFF here, the caller of vgetc() doesn't need to
 		// know that a menu was torn off

@@ -1288,12 +1288,17 @@ do_execreg(
     }
     else
     {
+	char_u buf[4] = {K_SPECIAL, KS_EXTRA, KE_REGSTOP, NUL};
+
 	get_yank_register(regname, FALSE);
 	if (y_current->y_array == NULL)
 	    return FAIL;
 
 	/* Disallow remaping for ":@r". */
 	remap = colon ? REMAP_NONE : REMAP_YES;
+
+	// Insert keys which represent to finish register executing.
+	ins_typebuf(buf, REMAP_NONE, 0, TRUE, TRUE);
 
 	/*
 	 * Insert lines into typeahead buffer, from last one to first one.
