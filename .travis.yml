@@ -76,8 +76,8 @@ addons:
       - libperl-dev
       - python-dev
       - python3-dev
-      - liblua5.2-dev
-      - lua5.2
+      - libluajit-5.1-dev
+      - luajit
       - ruby-dev
       - tcl-dev
       - cscope
@@ -136,6 +136,9 @@ script:
     fi
   - |
     (
+    if [[ "${TRAVIS_OS_NAME}" = "linux" ]] && [[ "${CONFOPT}" =~ luainterp ]]; then
+      CONFOPT="${CONFOPT} --with-luajit"
+    fi
     cd "${SRCDIR}" \
       && ./configure --with-features=${FEATURES} ${CONFOPT} --enable-fail-if-missing
     ) && if [[ "${BUILD}" = "yes" ]]; then
