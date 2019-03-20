@@ -3,6 +3,8 @@
 if !has('terminal') || has('gui_running') || $ASAN_OPTIONS !=# ''
   " Skip tests on Travis CI ASAN build because it's difficult to estimate
   " memory usage.
+func Test_no_memory_usage()
+endfunc
   finish
 endif
 
@@ -14,6 +16,8 @@ endfunc
 
 if has('win32')
   if !executable('wmic')
+func Test_no_memory_usage_no_wmic()
+endfunc
     finish
   endif
   func s:memory_usage(pid) abort
@@ -22,12 +26,16 @@ if has('win32')
   endfunc
 elseif has('unix')
   if !executable('ps')
+func Test_no_memory_usage_no_ps()
+endfunc
     finish
   endif
   func s:memory_usage(pid) abort
     return s:pick_nr(system('ps -o rss= -p ' . a:pid))
   endfunc
 else
+func Test_no_memory_usage_unsupported()
+endfunc
   finish
 endif
 
