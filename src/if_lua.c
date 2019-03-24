@@ -33,12 +33,14 @@ typedef struct {
     char_u	*name;	// funcref
     dict_T	*self;	// selfdict
 } luaV_Funcref;
+typedef partial_T *luaV_Partial;
 typedef void (*msgfunc_T)(char_u *);
 
 static const char LUAVIM_DICT[] = "dict";
 static const char LUAVIM_LIST[] = "list";
 static const char LUAVIM_BLOB[] = "blob";
 static const char LUAVIM_FUNCREF[] = "funcref";
+static const char LUAVIM_PARTIAL[] = "partial";
 static const char LUAVIM_BUFFER[] = "buffer";
 static const char LUAVIM_WINDOW[] = "window";
 static const char LUAVIM_FREE[] = "luaV_free";
@@ -72,6 +74,7 @@ static luaV_List *luaV_pushlist(lua_State *L, list_T *lis);
 static luaV_Dict *luaV_pushdict(lua_State *L, dict_T *dic);
 static luaV_Blob *luaV_pushblob(lua_State *L, blob_T *blo);
 static luaV_Funcref *luaV_pushfuncref(lua_State *L, char_u *name);
+static luaV_Partial *luaV_pushpartial(lua_State *L, partial_T *par);
 
 #if LUA_VERSION_NUM <= 501
 #define luaV_openlib(L, l, n) luaL_openlib(L, NULL, l, n)
@@ -544,6 +547,9 @@ luaV_pushtypval(lua_State *L, typval_T *tv)
 	case VAR_FUNC:
 	    luaV_pushfuncref(L, tv->vval.v_string);
 	    break;
+	case VAR_PARTIAL:
+	    luaV_pushpartial(L, tv->vval.v_partial);
+	    break;
 	case VAR_BLOB:
 	    luaV_pushblob(L, tv->vval.v_blob);
 	    break;
@@ -629,6 +635,16 @@ luaV_totypval(lua_State *L, int pos, typval_T *tv)
 		    tv->v_type = VAR_FUNC;
 		    tv->vval.v_string = vim_strsave(f->name);
 		    lua_pop(L, 5); // MTs
+		    break;
+		}
+		// check partial
+		luaV_getfield(L, LUAVIM_PARTIAL);
+		if (lua_rawequal(L, -1, -6))
+		{
+		    tv->v_type = VAR_FUNC;
+		    tv->vval.v_partial = *((luaV_Partial *) p);
+		    ++tv->vval.v_partial->pt_refcount;
+		    lua_pop(L, 6); // MTs
 		    break;
 		}
 		lua_pop(L, 4); // MTs
@@ -975,10 +991,16 @@ luaV_dict_index(lua_State *L)
     else
     {
 	luaV_pushtypval(L, &di->di_tv);
-	if (di->di_tv.v_type == VAR_FUNC) /* funcref? */
+	if (di->di_tv.v_type == VAR_FUNC) // funcref?
 	{
 	    luaV_Funcref *f = (luaV_Funcref *) lua_touserdata(L, -1);
-	    f->self = d; /* keep "self" reference */
+	    f->self = d; // keep "self" reference
+	    d->dv_refcount++;
+	}
+	else if (di->di_tv.v_type == VAR_PARTIAL) // partial?
+	{
+	    partial_T *p = (partial_T *) lua_touserdata(L, -1);
+	    p->pt_dict = d; // keep "pt_dict" reference
 	    d->dv_refcount++;
 	}
     }
@@ -1238,6 +1260,73 @@ static const luaL_Reg luaV_Funcref_mt[] = {
     {"__tostring", luaV_funcref_tostring},
     {"__gc", luaV_funcref_gc},
     {"__call", luaV_funcref_call},
+    {NULL, NULL}
+};
+
+
+/* =======   Partial type   ======= */
+
+    static luaV_Partial *
+luaV_newpartial(lua_State *L, partial_T *par)
+{
+    luaV_Partial *p = (luaV_Partial *)lua_newuserdata(L, sizeof(luaV_Partial));
+    *p = par;
+    par->pt_refcount++;
+    luaV_setudata(L, par); /* cache[par] = udata */
+    luaV_getfield(L, LUAVIM_PARTIAL);
+    lua_setmetatable(L, -2);
+    return p;
+}
+
+luaV_pushtype(partial_T, partial, luaV_Partial)
+luaV_type_tostring(partial, LUAVIM_PARTIAL)
+
+    static int
+luaV_partial_gc(lua_State *L)
+{
+    partial_T *p = (partial_T *) lua_touserdata(L, 1);
+
+    partial_unref(p);
+    return 0;
+}
+
+    static int
+luaV_partial_call(lua_State *L)
+{
+    partial_T *p = (partial_T *) lua_touserdata(L, 1);
+    int i, n = lua_gettop(L) - 1; // #args
+    int status = FAIL;
+    typval_T args;
+    typval_T rettv;
+
+    args.v_type = VAR_LIST;
+    args.vval.v_list = list_alloc();
+    rettv.v_type = VAR_UNKNOWN; // as in clear_tv
+    if (args.vval.v_list != NULL)
+    {
+	typval_T v;
+
+	for (i = 0; i < n; i++)
+	{
+	    luaV_checktypval(L, i + 2, &v, "calling partial");
+	    list_append_tv(args.vval.v_list, &v);
+	    clear_tv(&v);
+	}
+	status = func_call(partial_name(p), &args, p, p->pt_dict, &rettv);
+	if (status == OK)
+	    luaV_pushtypval(L, &rettv);
+	clear_tv(&args);
+	clear_tv(&rettv);
+    }
+    if (status != OK)
+	luaL_error(L, "cannot call partial");
+    return 1;
+}
+
+static const luaL_Reg luaV_Partial_mt[] = {
+    {"__tostring", luaV_partial_tostring},
+    {"__gc", luaV_partial_gc},
+    {"__call", luaV_partial_call},
     {NULL, NULL}
 };
 
@@ -1878,6 +1967,12 @@ luaV_type(lua_State *L)
 		lua_pushstring(L, "funcref");
 		return 1;
 	    }
+	    luaV_getfield(L, LUAVIM_PARTIAL);
+	    if (lua_rawequal(L, -1, 2))
+	    {
+		lua_pushstring(L, "partial");
+		return 1;
+	    }
 	    luaV_getfield(L, LUAVIM_BUFFER);
 	    if (lua_rawequal(L, -1, 2))
 	    {
@@ -1959,6 +2054,7 @@ luaV_setref(lua_State *L)
     luaV_getfield(L, LUAVIM_LIST);
     luaV_getfield(L, LUAVIM_DICT);
     luaV_getfield(L, LUAVIM_FUNCREF);
+    luaV_getfield(L, LUAVIM_PARTIAL);
     lua_pushnil(L);
     // traverse cache table
     while (!abort && lua_next(L, lua_upvalueindex(1)) != 0)
@@ -1966,7 +2062,7 @@ luaV_setref(lua_State *L)
 	lua_getmetatable(L, -1);
 	if (lua_rawequal(L, -1, 2)) // list?
 	{
-	    list_T *l = (list_T *)lua_touserdata(L, 5); // key
+	    list_T *l = (list_T *)lua_touserdata(L, -2); // key
 
 	    if (l->lv_copyID != copyID)
 	    {
@@ -1976,7 +2072,7 @@ luaV_setref(lua_State *L)
 	}
 	else if (lua_rawequal(L, -1, 3)) // dict?
 	{
-	    dict_T *d = (dict_T *)lua_touserdata(L, 5); // key
+	    dict_T *d = (dict_T *)lua_touserdata(L, -2); // key
 
 	    if (d->dv_copyID != copyID)
 	    {
@@ -1986,13 +2082,26 @@ luaV_setref(lua_State *L)
 	}
 	else if (lua_rawequal(L, -1, 4)) // funcref?
 	{
-	    luaV_Funcref *f = (luaV_Funcref *)lua_touserdata(L, 5); // key
+	    luaV_Funcref *f = (luaV_Funcref *)lua_touserdata(L, -2); // key
 
 	    if (f->self != NULL && f->self->dv_copyID != copyID)
 	    {
 		f->self->dv_copyID = copyID;
 		abort = set_ref_in_ht(&f->self->dv_hashtab, copyID, NULL);
 	    }
+	}
+	else if (lua_rawequal(L, -1, 5)) // partial?
+	{
+	    partial_T *p = (partial_T *)lua_touserdata(L, -2); // key
+	    int i;
+
+	    if (p->pt_dict != NULL && p->pt_dict->dv_copyID != copyID)
+	    {
+		p->pt_dict->dv_copyID = copyID;
+		abort = set_ref_in_ht(&p->pt_dict->dv_hashtab, copyID, NULL);
+	    }
+	    for (i = 0; i < p->pt_argc; ++i)
+		abort = set_ref_in_item(&p->pt_argv[i], copyID, NULL, NULL);
 	}
 	lua_pop(L, 2); // metatable and value
     }
@@ -2045,6 +2154,9 @@ luaopen_vim(lua_State *L)
     luaV_newmetatable(L, LUAVIM_FUNCREF);
     lua_pushvalue(L, 1);
     luaV_openlib(L, luaV_Funcref_mt, 1);
+    luaV_newmetatable(L, LUAVIM_PARTIAL);
+    lua_pushvalue(L, 1);
+    luaV_openlib(L, luaV_Partial_mt, 1);
     luaV_newmetatable(L, LUAVIM_BUFFER);
     lua_pushvalue(L, 1); /* cache table */
     luaV_openlib(L, luaV_Buffer_mt, 1);
