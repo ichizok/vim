@@ -1187,7 +1187,6 @@ luaV_pushfuncref(lua_State *L, char_u *name)
     return luaV_newfuncref(L, name);
 }
 
-
 luaV_type_tostring(funcref, LUAVIM_FUNCREF)
 
     static int
@@ -1200,16 +1199,6 @@ luaV_funcref_gc(lua_State *L)
     // NOTE: Don't call "dict_unref(f->self)", because the dict of "f->self"
     // will be (or has been already) freed by Vim's garbage collection.
     return 0;
-}
-
-/* equivalent to string(funcref) */
-    static int
-luaV_funcref_len(lua_State *L)
-{
-    luaV_Funcref *f = (luaV_Funcref *) lua_touserdata(L, 1);
-
-    lua_pushstring(L, (const char *) f->name);
-    return 1;
 }
 
     static int
@@ -1248,7 +1237,6 @@ luaV_funcref_call(lua_State *L)
 static const luaL_Reg luaV_Funcref_mt[] = {
     {"__tostring", luaV_funcref_tostring},
     {"__gc", luaV_funcref_gc},
-    {"__len", luaV_funcref_len},
     {"__call", luaV_funcref_call},
     {NULL, NULL}
 };
