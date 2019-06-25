@@ -4572,7 +4572,7 @@ eval7(
     /*
      * List: [expr, expr]
      */
-    case '[':	ret = get_list_tv(arg, rettv, evaluate);
+    case '[':	ret = list_get_tv(arg, rettv, evaluate);
 		break;
 
     /*
