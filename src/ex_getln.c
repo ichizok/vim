@@ -838,8 +838,7 @@ cmdline_init(void)
 getcmdline(
     int		firstc,
     long	count,		// only used for incremental search
-    int		indent,		// indent for inside conditionals
-    int		do_concat UNUSED)
+    int		indent)		// indent for inside conditionals
 {
     return getcmdline_int(firstc, count, indent, TRUE);
 }
@@ -2689,12 +2688,12 @@ getexline(
     int		c,		/* normally ':', NUL for ":append" */
     void	*cookie UNUSED,
     int		indent,		/* indent for inside conditionals */
-    int		do_concat)
+    int		do_concat UNUSED)
 {
     /* When executing a register, remove ':' that's in front of each line. */
     if (exec_from_reg && vpeekc() == ':')
 	(void)vgetc();
-    return getcmdline(c, 1L, indent, do_concat);
+    return getcmdline(c, 1L, indent);
 }
 
 /*

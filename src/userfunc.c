@@ -2307,7 +2307,7 @@ ex_function(exarg_T *eap)
 	{
 	    vim_free(line_to_free);
 	    if (eap->getline == NULL)
-		theline = getcmdline(':', 0L, indent, do_concat);
+		theline = getcmdline(':', 0L, indent);
 	    else
 		theline = eap->getline(':', eap->cookie, indent, do_concat);
 	    line_to_free = theline;
