@@ -20,9 +20,9 @@ static int	ex_pressedreturn = FALSE;
 #endif
 
 #ifdef FEAT_EVAL
-static char_u	*do_one_cmd(char_u **, int, struct condstack *, char_u *(*fgetline)(int, void *, int, int), void *cookie);
+static char_u	*do_one_cmd(char_u **, int, struct condstack *, getline_func_T fgetline, void *cookie);
 #else
-static char_u	*do_one_cmd(char_u **, int, char_u *(*fgetline)(int, void *, int, int), void *cookie);
+static char_u	*do_one_cmd(char_u **, int, getline_func_T fgetline, void *cookie);
 static int	if_level = 0;		/* depth in :if */
 #endif
 static void	free_cmdmod(void);
@@ -431,7 +431,7 @@ struct loop_cookie
     int		current_line;		/* last read line from growarray */
     int		repeating;		/* TRUE when looping a second time */
     /* When "repeating" is FALSE use "getline" and "cookie" to get lines */
-    char_u	*(*getline)(int, void *, int, int);
+    getline_func_T getline;
     void	*cookie;
 };
 
@@ -618,10 +618,10 @@ do_cmdline_cmd(char_u *cmd)
  */
     int
 do_cmdline(
-    char_u	*cmdline,
-    char_u	*(*fgetline)(int, void *, int, int),
-    void	*cookie,		/* argument for fgetline() */
-    int		flags)
+    char_u		*cmdline,
+    getline_func_T	fgetline,
+    void		*cookie,		/* argument for fgetline() */
+    int			flags)
 {
     char_u	*next_cmdline;		/* next cmd to execute */
     char_u	*cmdline_copy = NULL;	/* copy of cmd line */
@@ -644,7 +644,7 @@ do_cmdline(
     struct msglist	*private_msg_list;
 
     /* "fgetline" and "cookie" passed to do_one_cmd() */
-    char_u	*(*cmd_getline)(int, void *, int, int);
+    getline_func_T cmd_getline;
     void	*cmd_cookie;
     struct loop_cookie cmd_loop_cookie;
     void	*real_cookie;
@@ -1487,12 +1487,12 @@ free_cmdlines(garray_T *gap)
  */
     int
 getline_equal(
-    char_u	*(*fgetline)(int, void *, int, int),
-    void	*cookie UNUSED,		/* argument for fgetline() */
-    char_u	*(*func)(int, void *, int, int))
+    getline_func_T	fgetline,
+    void		*cookie UNUSED,		/* argument for fgetline() */
+    getline_func_T	func)
 {
 #ifdef FEAT_EVAL
-    char_u		*(*gp)(int, void *, int, int);
+    getline_func_T	gp;
     struct loop_cookie *cp;
 
     /* When "fgetline" is "get_loop_line()" use the "cookie" to find the
@@ -1517,11 +1517,11 @@ getline_equal(
  */
     void *
 getline_cookie(
-    char_u	*(*fgetline)(int, void *, int, int) UNUSED,
-    void	*cookie)		/* argument for fgetline() */
+    getline_func_T	fgetline UNUSED,
+    void		*cookie)		/* argument for fgetline() */
 {
 #ifdef FEAT_EVAL
-    char_u		*(*gp)(int, void *, int, int);
+    getline_func_T	gp;
     struct loop_cookie *cp;
 
     /* When "fgetline" is "get_loop_line()" use the "cookie" to find the
@@ -1654,7 +1654,7 @@ do_one_cmd(
 #ifdef FEAT_EVAL
     struct condstack	*cstack,
 #endif
-    char_u		*(*fgetline)(int, void *, int, int),
+    getline_func_T	fgetline,
     void		*cookie)		/* argument for fgetline() */
 {
     char_u		*p;

@@ -1806,6 +1806,8 @@ EX(CMD_tilde,		"~",		do_sub,
 #ifndef DO_DECLARE_EXCMD
 typedef enum CMD_index cmdidx_T;
 
+typedef char_u *(*getline_func_T)(int, void *, int, int);
+
 /*
  * Arguments used for Ex commands.
  */
@@ -1837,7 +1839,7 @@ struct exarg
     int		bad_char;	/* BAD_KEEP, BAD_DROP or replacement byte */
     int		useridx;	/* user command index */
     char	*errmsg;	/* returned error message */
-    char_u	*(*getline)(int, void *, int, int);
+    getline_func_T getline;
     void	*cookie;	/* argument for getline() */
 #ifdef FEAT_EVAL
     struct condstack *cstack;	/* condition stack for ":if" etc. */

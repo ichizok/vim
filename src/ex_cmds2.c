@@ -3792,7 +3792,7 @@ free_scriptnames(void)
 #endif
 
     linenr_T
-get_sourced_lnum(char_u *(*fgetline)(int, void *, int, int), void *cookie)
+get_sourced_lnum(getline_func_T fgetline, void *cookie)
 {
     return fgetline == getsourceline
 			? ((struct source_cookie *)cookie)->sourcing_lnum
@@ -4229,8 +4229,8 @@ do_finish(exarg_T *eap, int reanimate)
  */
     int
 source_finished(
-    char_u	*(*fgetline)(int, void *, int, int),
-    void	*cookie)
+    getline_func_T	fgetline,
+    void		*cookie)
 {
     return (getline_equal(fgetline, cookie, getsourceline)
 	    && ((struct source_cookie *)getline_cookie(
