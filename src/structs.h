@@ -2060,8 +2060,7 @@ typedef struct
     long_u	jo_ansi_colors[16];
 # endif
     int		jo_tty_type;	    // first character of "tty_type"
-    char_u	*jo_term_api;
-    char_u	jo_term_api_buf[NUMBUFLEN];
+    list_T	*jo_term_api;
 #endif
 } jobopt_T;
 

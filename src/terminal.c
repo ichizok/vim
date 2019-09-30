@@ -109,7 +109,7 @@ struct terminal_S {
 #define TL_FINISH_OPEN	    'o'	// ++open
     char_u	*tl_opencmd;
     char_u	*tl_eof_chars;
-    char_u	*tl_api;	// prefix for terminal API function
+    hashtab_T	tl_api;	// Prefixes for terminal API function
 
     char_u	*tl_arg0_cmd;	// To format the status bar
 
@@ -641,10 +641,16 @@ term_start(
 	term->tl_kill = vim_strnsave(opt->jo_term_kill, p - opt->jo_term_kill);
     }
 
+    hash_init(&term->tl_api);
     if (opt->jo_term_api != NULL)
-	term->tl_api = vim_strsave(opt->jo_term_api);
+    {
+	listitem_T *li = opt->jo_term_api->lv_first;
+
+	for (; li != NULL; li = li->li_next)
+	    hash_add(&term->tl_api, vim_strsave(li->li_tv.vval.v_string));
+    }
     else
-	term->tl_api = vim_strsave((char_u *)"Tapi_");
+	hash_add(&term->tl_api, vim_strsave((char_u *)"Tapi_"));
 
     // System dependent: setup the vterm and maybe start the job in it.
     if (argv == NULL
@@ -751,8 +757,23 @@ ex_terminal(exarg_T *eap)
 	    opt.jo_set2 |= JO2_TERM_API;
 	    if (ep != NULL)
 	    {
-		opt.jo_term_api = ep + 1;
+		char_u *p0 = ep + 1;
+		char_u *p1 = p0;
+
+		opt.jo_term_api = list_alloc();
+		if (opt.jo_term_api == NULL)
+		    goto theend;
+		++opt.jo_term_api->lv_refcount;
+
 		p = skiptowhite(cmd);
+		while (p0 < p)
+		{
+		    for (; *p1 != ',' && p1 < p; ++p1)
+			;
+		    if (p0 < p1)
+			list_append_string(opt.jo_term_api, p0, (int)(p1 - p0));
+		    p0 = ++p1;
+		}
 	    }
 	    else
 		opt.jo_term_api = NULL;
@@ -990,7 +1011,7 @@ free_unused_terminals()
 	free_scrollback(term);
 
 	term_free_vterm(term);
-	vim_free(term->tl_api);
+	hash_clear_all(&term->tl_api, 0);
 	vim_free(term->tl_title);
 #ifdef FEAT_SESSION
 	vim_free(term->tl_command);
@@ -3891,9 +3912,24 @@ handle_drop_command(listitem_T *item)
  * Return TRUE if "func" starts with "pat" and "pat" isn't empty.
  */
     static int
-is_permitted_term_api(char_u *func, char_u *pat)
+is_permitted_term_api(char_u *func, hashtab_T *ht)
 {
-    return pat != NULL && *pat != NUL && STRNICMP(func, pat, STRLEN(pat)) == 0;
+    int		todo = (int)ht->ht_used;
+    hashitem_T	*hi;
+
+    for (hi = ht->ht_array; todo > 0; ++hi)
+    {
+	if (!HASHITEM_EMPTY(hi))
+	{
+	    char_u *pat = hi->hi_key;
+
+	    if (pat != NULL && *pat != NUL
+				     && STRNICMP(func, pat, STRLEN(pat)) == 0)
+		return TRUE;
+	    --todo;
+	}
+    }
+    return FALSE;
 }
 
 /*
@@ -3915,7 +3951,7 @@ handle_call_command(term_T *term, channel_T *channel, listitem_T *item)
     }
     func = tv_get_string(&item->li_tv);
 
-    if (!is_permitted_term_api(func, term->tl_api))
+    if (!is_permitted_term_api(func, &term->tl_api))
     {
 	ch_log(channel, "Unpermitted function: %s", func);
 	return;
@@ -5673,25 +5709,141 @@ f_term_setansicolors(typval_T *argvars, typval_T *rettv UNUSED)
 }
 #endif
 
+    static void
+rettv_hash_list(hashtab_T *ht, typval_T *rettv)
+{
+    int		todo = (int)ht->ht_used;
+    hashitem_T	*hi;
+
+    if (rettv_list_alloc(rettv) == FAIL)
+	return;
+
+    for (hi = ht->ht_array; todo > 0; ++hi)
+    {
+	if (!HASHITEM_EMPTY(hi))
+	{
+	    char_u *pat = hi->hi_key;
+
+	    list_append_string(rettv->vval.v_list, pat, -1);
+	    --todo;
+	}
+    }
+}
+
+    static void
+term_setapi_one(hashtab_T *ht, char_u *api)
+{
+    if (api != NULL)
+	hash_add(ht, vim_strsave(api));
+}
+
+    static void
+term_addapi_one(hashtab_T *ht, char_u *api)
+{
+    if (api != NULL)
+    {
+	hash_T hash = hash_hash(api);
+	hashitem_T *hi = hash_lookup(ht, api, hash);
+
+	if (HASHITEM_EMPTY(hi))
+	    hash_add_item(ht, hi, vim_strsave(api), hash);
+    }
+}
+
+    static void
+term_delapi_one(hashtab_T *ht, char_u *api)
+{
+    if (api != NULL)
+    {
+	hashitem_T *hi = hash_find(ht, api);
+
+	if (!HASHITEM_EMPTY(hi))
+	{
+	    vim_free(hi->hi_key);
+	    hash_remove(ht, hi);
+	}
+    }
+}
+
 /*
  * "term_setapi(buf, api)" function
  */
     void
-f_term_setapi(typval_T *argvars, typval_T *rettv UNUSED)
+f_term_setapi(typval_T *argvars, typval_T *rettv)
 {
     buf_T	*buf = term_get_buf(argvars, "term_setapi()");
     term_T	*term;
-    char_u	*api;
 
     if (buf == NULL)
 	return;
     term = buf->b_term;
-    vim_free(term->tl_api);
-    api = tv_get_string_chk(&argvars[1]);
-    if (api != NULL)
-	term->tl_api = vim_strsave(api);
+    hash_clear_all(&term->tl_api, 0);
+    hash_init(&term->tl_api);
+    if (argvars[1].v_type == VAR_LIST)
+    {
+	list_T *l = argvars[1].vval.v_list;
+	listitem_T *li;
+
+	for (li = l->lv_first; li != NULL; li = li->li_next)
+	    term_setapi_one(&term->tl_api, tv_get_string_chk(&li->li_tv));
+    }
     else
-	term->tl_api = NULL;
+	term_setapi_one(&term->tl_api, tv_get_string_chk(&argvars[1]));
+
+    rettv_hash_list(&term->tl_api, rettv);
+}
+
+/*
+ * "term_addapi(buf, api)" function
+ */
+    void
+f_term_addapi(typval_T *argvars, typval_T *rettv UNUSED)
+{
+    buf_T	*buf = term_get_buf(argvars, "term_addapi()");
+    term_T	*term;
+
+    rettv->v_type = VAR_LIST;
+    if (buf == NULL)
+	return;
+    term = buf->b_term;
+    if (argvars[1].v_type == VAR_LIST)
+    {
+	list_T *l = argvars[1].vval.v_list;
+	listitem_T *li;
+
+	for (li = l->lv_first; li != NULL; li = li->li_next)
+	    term_addapi_one(&term->tl_api, tv_get_string_chk(&li->li_tv));
+    }
+    else
+	term_addapi_one(&term->tl_api, tv_get_string_chk(&argvars[1]));
+
+    rettv_hash_list(&term->tl_api, rettv);
+}
+
+/*
+ * "term_delapi(buf, api)" function
+ */
+    void
+f_term_delapi(typval_T *argvars, typval_T *rettv UNUSED)
+{
+    buf_T	*buf = term_get_buf(argvars, "term_delapi()");
+    term_T	*term;
+
+    if (buf == NULL)
+	return;
+    term = buf->b_term;
+    if (argvars[1].v_type == VAR_LIST)
+    {
+	list_T *l = argvars[1].vval.v_list;
+	listitem_T *li;
+
+	for (li = l->lv_first; li != NULL; li = li->li_next)
+	    term_delapi_one(&term->tl_api, tv_get_string_chk(&li->li_tv));
+    }
+    else
+	term_delapi_one(&term->tl_api, tv_get_string_chk(&argvars[1]));
+
+    rettv_hash_list(&term->tl_api, rettv);
 }
 
 /*

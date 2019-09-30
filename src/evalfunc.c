@@ -779,6 +779,8 @@ static funcentry_T global_functions[] =
 #endif
     {"tempname",	0, 0, 0,	  f_tempname},
 #ifdef FEAT_TERMINAL
+    {"term_addapi",	2, 2, FEARG_1,	  f_term_addapi},
+    {"term_delapi",	2, 2, FEARG_1,	  f_term_delapi},
     {"term_dumpdiff",	2, 3, FEARG_1,	  f_term_dumpdiff},
     {"term_dumpload",	1, 2, FEARG_1,	  f_term_dumpload},
     {"term_dumpwrite",	2, 3, FEARG_2,	  f_term_dumpwrite},

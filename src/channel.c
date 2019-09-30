@@ -4685,6 +4685,10 @@ free_job_options(jobopt_T *opt)
 	func_unref(opt->jo_exit_cb.cb_name);
     if (opt->jo_env != NULL)
 	dict_unref(opt->jo_env);
+#ifdef FEAT_TERMINAL
+    if (opt->jo_term_api != NULL)
+	list_unref(opt->jo_term_api);
+#endif
 }
 
 /*
@@ -5152,8 +5156,21 @@ get_job_options(typval_T *tv, jobopt_T *opt, int supported, int supported2)
 		if (!(supported2 & JO2_TERM_API))
 		    break;
 		opt->jo_set2 |= JO2_TERM_API;
-		opt->jo_term_api = tv_get_string_buf_chk(item,
-							 opt->jo_term_api_buf);
+		if (item->v_type == VAR_LIST)
+		    opt->jo_term_api = item->vval.v_list;
+		else
+		{
+		    char_u *api = tv_get_string_chk(item);
+
+		    if (api != NULL)
+		    {
+			opt->jo_term_api = list_alloc();
+			if (opt->jo_term_api != NULL)
+			    list_append_string(opt->jo_term_api, api, -1);
+		    }
+		}
+		if (opt->jo_term_api != NULL)
+		    ++opt->jo_term_api->lv_refcount;
 	    }
 #endif
 	    else if (STRCMP(hi->hi_key, "env") == 0)
