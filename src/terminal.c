@@ -5709,23 +5709,31 @@ f_term_setansicolors(typval_T *argvars, typval_T *rettv UNUSED)
 }
 #endif
 
-    static void
-rettv_hash_list(hashtab_T *ht, typval_T *rettv)
+/*
+ * "term_getapi(buf)" function
+ */
+    void
+f_term_getapi(typval_T *argvars, typval_T *rettv)
 {
-    int		todo = (int)ht->ht_used;
-    hashitem_T	*hi;
+    buf_T	*buf = term_get_buf(argvars, "term_getapi()");
+    term_T	*term;
 
-    if (rettv_list_alloc(rettv) == FAIL)
+    if (buf == NULL)
 	return;
-
-    for (hi = ht->ht_array; todo > 0; ++hi)
+    term = buf->b_term;
+    if (rettv_list_alloc(rettv) == OK)
     {
-	if (!HASHITEM_EMPTY(hi))
-	{
-	    char_u *pat = hi->hi_key;
+	hashitem_T *hi;
+	int todo;
 
-	    list_append_string(rettv->vval.v_list, pat, -1);
-	    --todo;
+	todo = (int)term->tl_api.ht_used;
+	for (hi = term->tl_api.ht_array; todo > 0; ++hi)
+	{
+	    if (!HASHITEM_EMPTY(hi))
+	    {
+		list_append_string(rettv->vval.v_list, hi->hi_key, -1);
+		--todo;
+	    }
 	}
     }
 }
@@ -5789,8 +5797,6 @@ f_term_setapi(typval_T *argvars, typval_T *rettv)
     }
     else
 	term_setapi_one(&term->tl_api, tv_get_string_chk(&argvars[1]));
-
-    rettv_hash_list(&term->tl_api, rettv);
 }
 
 /*
@@ -5816,8 +5822,6 @@ f_term_addapi(typval_T *argvars, typval_T *rettv UNUSED)
     }
     else
 	term_addapi_one(&term->tl_api, tv_get_string_chk(&argvars[1]));
-
-    rettv_hash_list(&term->tl_api, rettv);
 }
 
 /*
@@ -5842,8 +5846,6 @@ f_term_delapi(typval_T *argvars, typval_T *rettv UNUSED)
     }
     else
 	term_delapi_one(&term->tl_api, tv_get_string_chk(&argvars[1]));
-
-    rettv_hash_list(&term->tl_api, rettv);
 }
 
 /*

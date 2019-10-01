@@ -788,6 +788,7 @@ static funcentry_T global_functions[] =
 # if defined(FEAT_GUI) || defined(FEAT_TERMGUICOLORS)
     {"term_getansicolors", 1, 1, FEARG_1, f_term_getansicolors},
 # endif
+    {"term_getapi",	1, 1, FEARG_1,	  f_term_getapi},
     {"term_getattr",	2, 2, FEARG_1,	  f_term_getattr},
     {"term_getcursor",	1, 1, FEARG_1,	  f_term_getcursor},
     {"term_getjob",	1, 1, FEARG_1,	  f_term_getjob},
