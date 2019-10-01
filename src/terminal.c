@@ -5739,45 +5739,17 @@ f_term_getapi(typval_T *argvars, typval_T *rettv)
 }
 
     static void
-term_setapi_one(hashtab_T *ht, char_u *api)
+term_setapi(term_T *term, char_u *api)
 {
     if (api != NULL)
-	hash_add(ht, vim_strsave(api));
-}
-
-    static void
-term_addapi_one(hashtab_T *ht, char_u *api)
-{
-    if (api != NULL)
-    {
-	hash_T hash = hash_hash(api);
-	hashitem_T *hi = hash_lookup(ht, api, hash);
-
-	if (HASHITEM_EMPTY(hi))
-	    hash_add_item(ht, hi, vim_strsave(api), hash);
-    }
-}
-
-    static void
-term_delapi_one(hashtab_T *ht, char_u *api)
-{
-    if (api != NULL)
-    {
-	hashitem_T *hi = hash_find(ht, api);
-
-	if (!HASHITEM_EMPTY(hi))
-	{
-	    vim_free(hi->hi_key);
-	    hash_remove(ht, hi);
-	}
-    }
+	hash_add(&term->tl_api, vim_strsave(api));
 }
 
 /*
  * "term_setapi(buf, api)" function
  */
     void
-f_term_setapi(typval_T *argvars, typval_T *rettv)
+f_term_setapi(typval_T *argvars, typval_T *rettv UNUSED)
 {
     buf_T	*buf = term_get_buf(argvars, "term_setapi()");
     term_T	*term;
@@ -5793,10 +5765,23 @@ f_term_setapi(typval_T *argvars, typval_T *rettv)
 	listitem_T *li;
 
 	for (li = l->lv_first; li != NULL; li = li->li_next)
-	    term_setapi_one(&term->tl_api, tv_get_string_chk(&li->li_tv));
+	    term_setapi(term, tv_get_string_chk(&li->li_tv));
     }
     else
-	term_setapi_one(&term->tl_api, tv_get_string_chk(&argvars[1]));
+	term_setapi(term, tv_get_string_chk(&argvars[1]));
+}
+
+    static void
+term_addapi(term_T *term, char_u *api)
+{
+    if (api != NULL)
+    {
+	hash_T hash = hash_hash(api);
+	hashitem_T *hi = hash_lookup(&term->tl_api, api, hash);
+
+	if (HASHITEM_EMPTY(hi))
+	    hash_add_item(&term->tl_api, hi, vim_strsave(api), hash);
+    }
 }
 
 /*
@@ -5808,7 +5793,6 @@ f_term_addapi(typval_T *argvars, typval_T *rettv UNUSED)
     buf_T	*buf = term_get_buf(argvars, "term_addapi()");
     term_T	*term;
 
-    rettv->v_type = VAR_LIST;
     if (buf == NULL)
 	return;
     term = buf->b_term;
@@ -5818,10 +5802,25 @@ f_term_addapi(typval_T *argvars, typval_T *rettv UNUSED)
 	listitem_T *li;
 
 	for (li = l->lv_first; li != NULL; li = li->li_next)
-	    term_addapi_one(&term->tl_api, tv_get_string_chk(&li->li_tv));
+	    term_addapi(term, tv_get_string_chk(&li->li_tv));
     }
     else
-	term_addapi_one(&term->tl_api, tv_get_string_chk(&argvars[1]));
+	term_addapi(term, tv_get_string_chk(&argvars[1]));
+}
+
+    static void
+term_delapi(term_T *term, char_u *api)
+{
+    if (api != NULL)
+    {
+	hashitem_T *hi = hash_find(&term->tl_api, api);
+
+	if (!HASHITEM_EMPTY(hi))
+	{
+	    vim_free(hi->hi_key);
+	    hash_remove(&term->tl_api, hi);
+	}
+    }
 }
 
 /*
@@ -5842,10 +5841,10 @@ f_term_delapi(typval_T *argvars, typval_T *rettv UNUSED)
 	listitem_T *li;
 
 	for (li = l->lv_first; li != NULL; li = li->li_next)
-	    term_delapi_one(&term->tl_api, tv_get_string_chk(&li->li_tv));
+	    term_delapi(term, tv_get_string_chk(&li->li_tv));
     }
     else
-	term_delapi_one(&term->tl_api, tv_get_string_chk(&argvars[1]));
+	term_delapi(term, tv_get_string_chk(&argvars[1]));
 }
 
 /*
