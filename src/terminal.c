@@ -191,8 +191,8 @@ static void term_free_vterm(term_T *term);
 #ifdef FEAT_GUI
 static void update_system_term(term_T *term);
 #endif
-
 static void handle_postponed_scrollback(term_T *term);
+static void term_addapi(term_T *term, char_u *api);
 
 // The character that we know (or assume) that the terminal expects for the
 // backspace key.
@@ -647,10 +647,10 @@ term_start(
 	listitem_T *li = opt->jo_term_api->lv_first;
 
 	for (; li != NULL; li = li->li_next)
-	    hash_add(&term->tl_api, vim_strsave(li->li_tv.vval.v_string));
+	    term_addapi(term, li->li_tv.vval.v_string);
     }
     else
-	hash_add(&term->tl_api, vim_strsave((char_u *)"Tapi_"));
+	term_addapi(term, (char_u *)"Tapi_");
 
     // System dependent: setup the vterm and maybe start the job in it.
     if (argv == NULL
@@ -5709,68 +5709,6 @@ f_term_setansicolors(typval_T *argvars, typval_T *rettv UNUSED)
 }
 #endif
 
-/*
- * "term_getapi(buf)" function
- */
-    void
-f_term_getapi(typval_T *argvars, typval_T *rettv)
-{
-    buf_T	*buf = term_get_buf(argvars, "term_getapi()");
-    term_T	*term;
-
-    if (buf == NULL)
-	return;
-    term = buf->b_term;
-    if (rettv_list_alloc(rettv) == OK)
-    {
-	hashitem_T *hi;
-	int todo;
-
-	todo = (int)term->tl_api.ht_used;
-	for (hi = term->tl_api.ht_array; todo > 0; ++hi)
-	{
-	    if (!HASHITEM_EMPTY(hi))
-	    {
-		list_append_string(rettv->vval.v_list, hi->hi_key, -1);
-		--todo;
-	    }
-	}
-    }
-}
-
-    static void
-term_setapi(term_T *term, char_u *api)
-{
-    if (api != NULL)
-	hash_add(&term->tl_api, vim_strsave(api));
-}
-
-/*
- * "term_setapi(buf, api)" function
- */
-    void
-f_term_setapi(typval_T *argvars, typval_T *rettv UNUSED)
-{
-    buf_T	*buf = term_get_buf(argvars, "term_setapi()");
-    term_T	*term;
-
-    if (buf == NULL)
-	return;
-    term = buf->b_term;
-    hash_clear_all(&term->tl_api, 0);
-    hash_init(&term->tl_api);
-    if (argvars[1].v_type == VAR_LIST)
-    {
-	list_T *l = argvars[1].vval.v_list;
-	listitem_T *li;
-
-	for (li = l->lv_first; li != NULL; li = li->li_next)
-	    term_setapi(term, tv_get_string_chk(&li->li_tv));
-    }
-    else
-	term_setapi(term, tv_get_string_chk(&argvars[1]));
-}
-
     static void
 term_addapi(term_T *term, char_u *api)
 {
@@ -5845,6 +5783,61 @@ f_term_delapi(typval_T *argvars, typval_T *rettv UNUSED)
     }
     else
 	term_delapi(term, tv_get_string_chk(&argvars[1]));
+}
+
+/*
+ * "term_getapi(buf)" function
+ */
+    void
+f_term_getapi(typval_T *argvars, typval_T *rettv)
+{
+    buf_T	*buf = term_get_buf(argvars, "term_getapi()");
+    term_T	*term;
+
+    if (buf == NULL)
+	return;
+    term = buf->b_term;
+    if (rettv_list_alloc(rettv) == OK)
+    {
+	hashitem_T *hi;
+	int todo;
+
+	todo = (int)term->tl_api.ht_used;
+	for (hi = term->tl_api.ht_array; todo > 0; ++hi)
+	{
+	    if (!HASHITEM_EMPTY(hi))
+	    {
+		list_append_string(rettv->vval.v_list, hi->hi_key, -1);
+		--todo;
+	    }
+	}
+    }
+}
+
+/*
+ * "term_setapi(buf, api)" function
+ */
+    void
+f_term_setapi(typval_T *argvars, typval_T *rettv UNUSED)
+{
+    buf_T	*buf = term_get_buf(argvars, "term_setapi()");
+    term_T	*term;
+
+    if (buf == NULL)
+	return;
+    term = buf->b_term;
+    hash_clear_all(&term->tl_api, 0);
+    hash_init(&term->tl_api);
+    if (argvars[1].v_type == VAR_LIST)
+    {
+	list_T *l = argvars[1].vval.v_list;
+	listitem_T *li;
+
+	for (li = l->lv_first; li != NULL; li = li->li_next)
+	    term_addapi(term, tv_get_string_chk(&li->li_tv));
+    }
+    else
+	term_addapi(term, tv_get_string_chk(&argvars[1]));
 }
 
 /*
