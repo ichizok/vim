@@ -527,6 +527,7 @@ term_dumpwrite({buf}, {filename} [, {options}])
 		name: >
 			GetFilename()->term_dumpwrite(bufnr)
 
+
 term_getaltscreen({buf})				*term_getaltscreen()*
 		Returns 1 if the terminal of {buf} is using the alternate
 		screen.
@@ -551,6 +552,14 @@ term_getansicolors({buf})				*term_getansicolors()*
 
 <		{only available when compiled with GUI enabled and/or the
 		|+termguicolors| feature}
+
+term_getapi({buf})					*term_getapi()*
+		Get list of the function name prefixes to be used for the
+		|terminal-api| function in terminal {buf}.
+
+		Can also be used as a |method|: >
+			GetBufnr()->term_getapi()
+
 
 term_getattr({attr}, {what})				*term_getattr()*
 		Given {attr}, a value returned by term_scrape() in the "attr"
@@ -588,6 +597,7 @@ term_getcursor({buf})					*term_getcursor()*
 
 		Can also be used as a |method|: >
 			GetBufnr()->term_getcursor()
+
 
 term_getjob({buf})					*term_getjob()*
 		Get the Job associated with terminal window {buf}.
@@ -717,13 +727,19 @@ term_sendkeys({buf}, {keys})				*term_sendkeys()*
 
 
 term_setapi({buf}, {expr})				*term_setapi()*
-		Set the function name prefix to be used for the |terminal-api|
-		function in terminal {buf}.  For example: >
+		Set the function name prefixes to be used for the
+		|terminal-api| function in terminal {buf}.  {expr} can be a
+		string or a list.  For example: >
 		    :call term_setapi(buf, "Myapi_")
+		    :call term_setapi(buf, ["Xapi_", "Tapi_"])
 		    :call term_setapi(buf, "")
 <
-		The default is "Tapi_".  When {expr} is an empty string then
-		no |terminal-api| function can be used for {buf}.
+		When {expr} is an empty string or list then no |terminal-api|
+		function can be used for {buf}.
+
+		Can also be used as a |method|: >
+			GetBufnr()->term_setapi(expr)
+
 
 term_setansicolors({buf}, {colors})			*term_setansicolors()*
 		Set the ANSI color palette used by terminal {buf}.
