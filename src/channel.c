@@ -5160,13 +5160,12 @@ get_job_options(typval_T *tv, jobopt_T *opt, int supported, int supported2)
 		    opt->jo_term_api = item->vval.v_list;
 		else
 		{
-		    char_u *api = tv_get_string_chk(item);
-
-		    if (api != NULL)
+		    opt->jo_term_api = list_alloc();
+		    if (opt->jo_term_api != NULL)
 		    {
-			opt->jo_term_api = list_alloc();
-			if (opt->jo_term_api != NULL)
-			    list_append_string(opt->jo_term_api, api, -1);
+			val = tv_get_string_chk(item);
+			if (val != NULL && *val != NUL)
+			    list_append_string(opt->jo_term_api, val, -1);
 		    }
 		}
 		if (opt->jo_term_api != NULL)

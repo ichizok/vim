@@ -5712,7 +5712,7 @@ f_term_setansicolors(typval_T *argvars, typval_T *rettv UNUSED)
     static void
 term_addapi(term_T *term, char_u *api)
 {
-    if (api != NULL)
+    if (api != NULL && *api != NUL)
     {
 	hash_T hash = hash_hash(api);
 	hashitem_T *hi = hash_lookup(&term->tl_api, api, hash);
@@ -5749,7 +5749,7 @@ f_term_addapi(typval_T *argvars, typval_T *rettv UNUSED)
     static void
 term_delapi(term_T *term, char_u *api)
 {
-    if (api != NULL)
+    if (api != NULL && *api != NUL)
     {
 	hashitem_T *hi = hash_find(&term->tl_api, api);
 
