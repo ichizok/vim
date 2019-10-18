@@ -2268,16 +2268,57 @@ func Test_terminal_setapi_and_call()
   unlet! g:called_arg
 
   let buf = RunVimInTerminal('-S Xscript', {'term_api': ''})
+  call assert_equal([], buf->term_getapi())
   call WaitForAssert({-> assert_match('Unpermitted function: Tapi_TryThis', string(readfile('Xlog')))})
   call assert_false(exists('g:called_bufnum'))
   call assert_false(exists('g:called_arg'))
 
+  unlet! g:called_bufnum
+  unlet! g:called_arg
+
   eval buf->term_setapi('Tapi_')
+  call assert_equal(['Tapi_'], buf->term_getapi())
   call term_sendkeys(buf, ":set notitle\<CR>")
   call term_sendkeys(buf, ":source Xscript\<CR>")
   call WaitFor({-> exists('g:called_bufnum')})
   call assert_equal(buf, g:called_bufnum)
   call assert_equal(['hello', 123], g:called_arg)
+
+  call StopVimInTerminal(buf)
+
+  call delete('Xscript')
+  call ch_logfile('')
+  call delete('Xlog')
+  unlet! g:called_bufnum
+  unlet! g:called_arg
+endfunc
+
+func Test_terminal_setapi_list_and_call()
+  CheckRunVimInTerminal
+
+  call WriteApiCall('Tapi_TryThis')
+  call ch_logfile('Xlog', 'w')
+
+  unlet! g:called_bufnum
+  unlet! g:called_arg
+
+  let buf = RunVimInTerminal('-S Xscript', {'term_api': ['Xapi_', 'Tapi_']})
+  call assert_equal(['Xapi_', 'Tapi_'], buf->term_getapi())
+  call WaitFor({-> exists('g:called_bufnum')})
+  call assert_equal(buf, g:called_bufnum)
+  call assert_equal(['hello', 123], g:called_arg)
+  call assert_notmatch('Unpermitted function: Tapi_TryThis', string(readfile('Xlog')))
+
+  unlet! g:called_bufnum
+  unlet! g:called_arg
+
+  eval buf->term_setapi([])
+  call assert_equal([], buf->term_getapi())
+  call term_sendkeys(buf, ":set notitle\<CR>")
+  call term_sendkeys(buf, ":source Xscript\<CR>")
+  call WaitForAssert({-> assert_match('Unpermitted function: Tapi_TryThis', string(readfile('Xlog')))})
+  call assert_false(exists('g:called_bufnum'))
+  call assert_false(exists('g:called_arg'))
 
   call StopVimInTerminal(buf)
 
@@ -2299,16 +2340,20 @@ func Test_terminal_api_arg()
 
   execute 'term ++api= ' .. GetVimCommandCleanTerm() .. '-S Xscript'
   let buf = bufnr('%')
+  call assert_equal([], buf->term_getapi())
   call WaitForAssert({-> assert_match('Unpermitted function: Tapi_TryThis', string(readfile('Xlog')))})
   call assert_false(exists('g:called_bufnum'))
   call assert_false(exists('g:called_arg'))
 
   call StopVimInTerminal(buf)
 
+  unlet! g:called_bufnum
+  unlet! g:called_arg
   call ch_logfile('Xlog', 'w')
 
-  execute 'term ++api=Tapi_ ' .. GetVimCommandCleanTerm() .. '-S Xscript'
+  execute 'term ++api=Xapi_,Tapi_ ' .. GetVimCommandCleanTerm() .. '-S Xscript'
   let buf = bufnr('%')
+  call assert_equal(['Xapi_', 'Tapi_'], buf->term_getapi())
   call WaitFor({-> exists('g:called_bufnum')})
   call assert_equal(buf, g:called_bufnum)
   call assert_equal(['hello', 123], g:called_arg)
