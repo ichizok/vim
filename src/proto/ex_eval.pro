@@ -24,6 +24,7 @@ void ex_try(exarg_T *eap);
 void ex_catch(exarg_T *eap);
 void ex_finally(exarg_T *eap);
 void ex_endtry(exarg_T *eap);
+void ex_end(exarg_T *eap);
 void enter_cleanup(cleanup_T *csp);
 void leave_cleanup(cleanup_T *csp);
 int cleanup_conditionals(struct condstack *cstack, int searched_cond, int inclusive);

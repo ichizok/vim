@@ -282,6 +282,7 @@ static void	ex_tag_cmd(exarg_T *eap, char_u *name);
 # define ex_endif		ex_ni
 # define ex_endtry		ex_ni
 # define ex_endwhile		ex_ni
+# define ex_end			ex_ni
 # define ex_eval		ex_ni
 # define ex_execute		ex_ni
 # define ex_finally		ex_ni
@@ -1732,7 +1733,8 @@ do_one_cmd(
 						  & (CSF_ACTIVE | CSF_TRUE)));
 	else if (ea.cmdidx == CMD_finally)
 	    skip = FALSE;
-	else if (ea.cmdidx != CMD_endif
+	else if (ea.cmdidx != CMD_end
+		&& ea.cmdidx != CMD_endif
 		&& ea.cmdidx != CMD_endfor
 		&& ea.cmdidx != CMD_endtry
 		&& ea.cmdidx != CMD_endwhile)
@@ -1932,7 +1934,7 @@ do_one_cmd(
 	++if_level;
     if (if_level)
     {
-	if (ea.cmdidx == CMD_endif)
+	if (ea.cmdidx == CMD_end || ea.cmdidx == CMD_endif)
 	    --if_level;
 	goto doend;
     }
@@ -2346,6 +2348,7 @@ do_one_cmd(
 	    case CMD_catch:
 	    case CMD_finally:
 	    case CMD_endtry:
+	    case CMD_end:
 	    case CMD_function:
 				break;
 

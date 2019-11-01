@@ -1943,6 +1943,36 @@ ex_endtry(exarg_T *eap)
 }
 
 /*
+ * Generic ":end"; Handle the latest ":if" ":while" ":for" ":try" block.
+ */
+    void
+ex_end(exarg_T *eap)
+{
+    if (eap->cstack->cs_idx < 0)
+	eap->errmsg = N_("EXXX: :end without :if, :while, :for, or :try");
+    else
+    {
+	int csf = eap->cstack->cs_flags[eap->cstack->cs_idx];
+
+	if (csf & (CSF_WHILE | CSF_FOR))
+	{
+	    eap->cmdidx = (csf & CSF_WHILE) ? CMD_endwhile : CMD_endfor;
+	    ex_endwhile(eap);
+	}
+	else if (csf & CSF_TRY)
+	{
+	    eap->cmdidx = CMD_endtry;
+	    ex_endtry(eap);
+	}
+	else
+	{
+	    eap->cmdidx = CMD_endif;
+	    ex_endif(eap);
+	}
+    }
+}
+
+/*
  * enter_cleanup() and leave_cleanup()
  *
  * Functions to be called before/after invoking a sequence of autocommands for
