@@ -5808,6 +5808,39 @@ f_term_setansicolors(typval_T *argvars, typval_T *rettv UNUSED)
 #endif
 
 /*
+ * "term_getapi(buf)" function
+ */
+    void
+f_term_getapi(typval_T *argvars, typval_T *rettv)
+{
+    buf_T	*buf = term_get_buf(argvars, "term_getapi()");
+    term_T	*term;
+    list_T	*l;
+    char_u	*p1, *p2;
+
+    if (rettv_list_alloc(rettv) == FAIL)
+	return;
+    if (buf == NULL)
+	return;
+    term = buf->b_term;
+    if (term->tl_api == NULL)
+	return;
+
+    l = rettv->vval.v_list;
+    for (p1 = p2 = term->tl_api;; p1++)
+    {
+	if (*p1 == ',' || *p1 == NUL)
+	{
+	    if (p1 - p2 > 0)
+		list_append_string(l, p2, p1 - p2);
+	    if (*p1 == NUL)
+		break;
+	    p2 = p1 + 1;
+	}
+    }
+}
+
+/*
  * "term_setapi(buf, api)" function
  */
     void
