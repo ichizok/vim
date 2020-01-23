@@ -637,18 +637,10 @@ term_start(
 #endif
 
     if (opt->jo_term_kill != NULL)
-    {
-	char_u *p = skiptowhite(opt->jo_term_kill);
-
-	term->tl_kill = vim_strnsave(opt->jo_term_kill, p - opt->jo_term_kill);
-    }
+	term->tl_kill = vim_strsave(opt->jo_term_kill);
 
     if (opt->jo_term_api != NULL)
-    {
-	char_u *p = skiptowhite(opt->jo_term_api);
-
-	term->tl_api = vim_strnsave(opt->jo_term_api, p - opt->jo_term_api);
-    }
+	term->tl_api = vim_strsave(opt->jo_term_api);
     else
 	term->tl_api = vim_strsave((char_u *)"Tapi_");
 
@@ -749,16 +741,16 @@ ex_terminal(exarg_T *eap)
 	else if (OPTARG_HAS("kill") && ep != NULL)
 	{
 	    opt.jo_set2 |= JO2_TERM_KILL;
-	    opt.jo_term_kill = ep + 1;
 	    p = skiptowhite(cmd);
+	    opt.jo_term_kill = vim_strnsave(ep + 1, p - (ep + 1));
 	}
 	else if (OPTARG_HAS("api"))
 	{
 	    opt.jo_set2 |= JO2_TERM_API;
 	    if (ep != NULL)
 	    {
-		opt.jo_term_api = ep + 1;
 		p = skiptowhite(cmd);
+		opt.jo_term_api = vim_strnsave(ep + 1, p - (ep + 1));
 	    }
 	    else
 		opt.jo_term_api = NULL;
@@ -878,6 +870,8 @@ ex_terminal(exarg_T *eap)
 
 theend:
     vim_free(tofree);
+    vim_free(opt.jo_term_kill);
+    vim_free(opt.jo_term_api);
     vim_free(opt.jo_eof_chars);
 }
 
