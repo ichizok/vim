@@ -5863,17 +5863,46 @@ f_term_setapi(typval_T *argvars, typval_T *rettv UNUSED)
 {
     buf_T	*buf = term_get_buf(argvars, "term_setapi()");
     term_T	*term;
-    char_u	*api;
+    char_u	*val;
 
     if (buf == NULL)
 	return;
     term = buf->b_term;
     vim_free(term->tl_api);
-    api = tv_get_string_chk(&argvars[1]);
-    if (api != NULL)
-	term->tl_api = vim_strsave(api);
+    if (argvars[1].v_type == VAR_LIST)
+    {
+	garray_T ga;
+	listitem_T *li;
+
+	ga_init2(&ga, 1, 10);
+	for (li = argvars[1].vval.v_list->lv_first; li != NULL;
+							     li = li->li_next)
+	{
+	    val = tv_get_string_chk(&li->li_tv);
+	    if (val == NULL)
+		break;
+	    if (*val != NUL)
+	    {
+		ga_concat(&ga, val);
+		ga_append(&ga, ',');
+	    }
+	}
+	if (li == NULL)
+	{
+	    if (ga.ga_len > 0)
+		--ga.ga_len;
+	    ga_append(&ga, NUL);
+	    term->tl_api = ga.ga_data;
+	}
+	else
+	    ga_clear(&ga);
+    }
     else
-	term->tl_api = NULL;
+    {
+	val = tv_get_string_chk(&argvars[1]);
+	if (val != NULL)
+	    term->tl_api = vim_strsave(val);
+    }
 }
 
 /*

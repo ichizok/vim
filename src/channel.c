@@ -4688,6 +4688,8 @@ free_job_options(jobopt_T *opt)
 	func_unref(opt->jo_exit_cb.cb_name);
     if (opt->jo_env != NULL)
 	dict_unref(opt->jo_env);
+    if (opt->jo_term_api != NULL)
+	vim_free(opt->jo_term_api);
 }
 
 /*
@@ -5163,8 +5165,40 @@ get_job_options(typval_T *tv, jobopt_T *opt, int supported, int supported2)
 		if (!(supported2 & JO2_TERM_API))
 		    break;
 		opt->jo_set2 |= JO2_TERM_API;
-		opt->jo_term_api = tv_get_string_buf_chk(item,
-							opt->jo_term_api_buf);
+		if (item->v_type == VAR_LIST)
+		{
+		    garray_T ga;
+		    listitem_T *li;
+
+		    ga_init2(&ga, 1, 10);
+		    for (li = item->vval.v_list->lv_first; li != NULL;
+							     li = li->li_next)
+		    {
+			val = tv_get_string_chk(&li->li_tv);
+			if (val == NULL)
+			    break;
+			if (*val != NUL)
+			{
+			    ga_concat(&ga, val);
+			    ga_append(&ga, ',');
+			}
+		    }
+		    if (li == NULL)
+		    {
+			if (ga.ga_len > 0)
+			    --ga.ga_len;
+			ga_append(&ga, NUL);
+			opt->jo_term_api = ga.ga_data;
+		    }
+		    else
+			ga_clear(&ga);
+		}
+		else
+		{
+		    val = tv_get_string_chk(item);
+		    if (val != NULL)
+			opt->jo_term_api = vim_strsave(val);
+		}
 		if (opt->jo_term_api == NULL)
 		{
 		    semsg(_(e_invargval), "term_api");
