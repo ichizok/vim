@@ -4007,12 +4007,33 @@ handle_drop_command(listitem_T *item)
 }
 
 /*
- * Return TRUE if "func" starts with "pat" and "pat" isn't empty.
+ * Return TRUE if "func" starts with the any comma separated part of "pat".
  */
     static int
 is_permitted_term_api(char_u *func, char_u *pat)
 {
-    return pat != NULL && *pat != NUL && STRNICMP(func, pat, STRLEN(pat)) == 0;
+    char_u	*p;
+
+    if (func == NULL || *func == NUL || pat == NULL)
+	return FALSE;
+
+    for (p = pat; *p != NUL; )
+    {
+	char_u *f = func;
+
+	for (; *p == ','; p++)
+	    ;
+	if (*p == NUL)
+	    break;
+	for (; *f != NUL && *p != ',' && *p != NUL; f++, p++)
+	    if (*f != *p)
+		break;
+	if (*p == ',' || *p == NUL)
+	    return TRUE;
+	for (; *p != ',' && *p != NUL; p++)
+	    ;
+    }
+    return FALSE;
 }
 
 /*
