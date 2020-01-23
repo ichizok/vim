@@ -754,6 +754,7 @@ ex_terminal(exarg_T *eap)
 	    }
 	    else
 		opt.jo_term_api = NULL;
+	    opt.jo_term_api_ptr = &opt.jo_term_api;
 	}
 	else if (OPTARG_HAS("rows") && ep != NULL && isdigit(ep[1]))
 	{

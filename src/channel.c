@@ -4688,8 +4688,10 @@ free_job_options(jobopt_T *opt)
 	func_unref(opt->jo_exit_cb.cb_name);
     if (opt->jo_env != NULL)
 	dict_unref(opt->jo_env);
-    if (opt->jo_term_api != NULL)
-	vim_free(opt->jo_term_api);
+#ifdef FEAT_TERMINAL
+    if (opt->jo_term_api_ptr != NULL)
+	VIM_CLEAR(*opt->jo_term_api_ptr);
+#endif
 }
 
 /*
@@ -5204,6 +5206,7 @@ get_job_options(typval_T *tv, jobopt_T *opt, int supported, int supported2)
 		    semsg(_(e_invargval), "term_api");
 		    return FAIL;
 		}
+		opt->jo_term_api_ptr = &opt->jo_term_api;
 	    }
 #endif
 	    else if (STRCMP(hi->hi_key, "env") == 0)

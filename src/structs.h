@@ -2135,6 +2135,7 @@ typedef struct
 # endif
     int		jo_tty_type;	    // first character of "tty_type"
     char_u	*jo_term_api;
+    char_u	**jo_term_api_ptr;  // capture above &jo_term_api to free
 #endif
 } jobopt_T;
 
