@@ -54,7 +54,7 @@ if &lines < 24 || &columns < 80
   write
   split messages
   call append(line('$'), '')
-  call append(line('$'), 'From ' . expand('%') . ':')
+  call append(line('$'), 'From ' .. expand('%') .. ':')
   call append(line('$'), s:error)
   write
   qa!
@@ -110,14 +110,14 @@ let v:testing = 1
 
 " Support function: get the alloc ID by name.
 func GetAllocId(name)
-  exe 'split ' . s:srcdir . '/alloc.h'
+  exe 'split ' .. s:srcdir .. '/alloc.h'
   let top = search('typedef enum')
   if top == 0
     call add(v:errors, 'typedef not found in alloc.h')
   endif
-  let lnum = search('aid_' . a:name . ',')
+  let lnum = search('aid_' .. a:name .. ',')
   if lnum == 0
-    call add(v:errors, 'Alloc ID ' . a:name . ' not defined')
+    call add(v:errors, 'Alloc ID ' .. a:name .. ' not defined')
   endif
   close
   return lnum - top - 1
@@ -148,7 +148,7 @@ func Reltimefloat(time)
 endfunc
 
 func RunTheTest(test)
-  echo 'Executing ' . a:test
+  echo 'Executing ' .. a:test
   if has('reltime')
     let func_start = reltime()
   endif
@@ -175,24 +175,24 @@ func RunTheTest(test)
     try
       call SetUp()
     catch
-      call add(v:errors, 'Caught exception in SetUp() before ' . a:test . ': ' . v:exception . ' @ ' . v:throwpoint)
+      call add(v:errors, 'Caught exception in SetUp() before ' .. a:test .. ': ' .. v:exception .. ' @ ' .. v:throwpoint)
     endtry
   endif
 
   if a:test =~ 'Test_nocatch_'
     " Function handles errors itself.  This avoids skipping commands after the
     " error.
-    exe 'call ' . a:test
+    exe 'call ' .. a:test
   else
     try
       au VimLeavePre * call EarlyExit(g:testfunc)
-      exe 'call ' . a:test
+      exe 'call ' .. a:test
       au! VimLeavePre
     catch /^\cskipped/
       call add(s:messages, '    Skipped')
-      call add(s:skipped, 'SKIPPED ' . a:test . ': ' . substitute(v:exception, '^\S*\s\+', '',  ''))
+      call add(s:skipped, 'SKIPPED ' .. a:test .. ': ' .. substitute(v:exception, '^\S*\s\+', '',  ''))
     catch
-      call add(v:errors, 'Caught exception in ' . a:test . ': ' . v:exception . ' @ ' . v:throwpoint)
+      call add(v:errors, 'Caught exception in ' .. a:test .. ': ' .. v:exception .. ' @ ' .. v:throwpoint)
     endtry
   endif
 
@@ -204,7 +204,7 @@ func RunTheTest(test)
     try
       call TearDown()
     catch
-      call add(v:errors, 'Caught exception in TearDown() after ' . a:test . ': ' . v:exception . ' @ ' . v:throwpoint)
+      call add(v:errors, 'Caught exception in TearDown() after ' .. a:test .. ': ' .. v:exception .. ' @ ' .. v:throwpoint)
     endtry
   endif
 
@@ -235,9 +235,9 @@ func RunTheTest(test)
     endif
   endwhile
 
-  exe 'cd ' . save_cwd
+  exe 'cd ' .. save_cwd
 
-  let message = 'Executed ' . a:test
+  let message = 'Executed ' .. a:test
   if has('reltime')
     let message ..= ' in ' .. reltimestr(reltime(func_start)) .. ' seconds'
   endif
@@ -249,11 +249,11 @@ func AfterTheTest(func_name)
   if len(v:errors) > 0
     if match(s:may_fail_list, '^' .. a:func_name) >= 0
       let s:fail_expected += 1
-      call add(s:errors_expected, 'Found errors in ' . g:testfunc . ':')
+      call add(s:errors_expected, 'Found errors in ' .. g:testfunc .. ':')
       call extend(s:errors_expected, v:errors)
     else
       let s:fail += 1
-      call add(s:errors, 'Found errors in ' . g:testfunc . ':')
+      call add(s:errors, 'Found errors in ' .. g:testfunc .. ':')
       call extend(s:errors, v:errors)
     endif
     let v:errors = []
@@ -263,7 +263,7 @@ endfunc
 func EarlyExit(test)
   " It's OK for the test we use to test the quit detection.
   if a:test != 'Test_zz_quit_detected()'
-    call add(v:errors, 'Test caused Vim to exit: ' . a:test)
+    call add(v:errors, 'Test caused Vim to exit: ' .. a:test)
   endif
 
   call FinishTesting()
@@ -281,7 +281,7 @@ func FinishTesting()
 
   if s:fail == 0 && s:fail_expected == 0
     " Success, create the .res file so that make knows it's done.
-    exe 'split ' . fnamemodify(g:testname, ':r') . '.res'
+    exe 'split ' .. fnamemodify(g:testname, ':r') .. '.res'
     write
   endif
 
@@ -289,7 +289,7 @@ func FinishTesting()
     " Append errors to test.log
     split test.log
     call append(line('$'), '')
-    call append(line('$'), 'From ' . g:testname . ':')
+    call append(line('$'), 'From ' .. g:testname .. ':')
     call append(line('$'), s:errors)
     write
   endif
@@ -304,7 +304,7 @@ func FinishTesting()
     if s:filtered > 0
       call add(s:messages, "Filtered " .. s:filtered .. " tests with $TEST_FILTER")
     endif
-    let message = 'Executed ' . s:done . (s:done > 1 ? ' tests' : ' test')
+    let message = 'Executed ' .. s:done .. (s:done > 1 ? ' tests' : ' test')
   endif
   if s:done > 0 && has('reltime')
     let message ..= ' in ' .. reltimestr(reltime(s:start_time)) .. ' seconds'
@@ -312,13 +312,13 @@ func FinishTesting()
   echo message
   call add(s:messages, message)
   if s:fail > 0
-    let message = s:fail . ' FAILED:'
+    let message = s:fail .. ' FAILED:'
     echo message
     call add(s:messages, message)
     call extend(s:messages, s:errors)
   endif
   if s:fail_expected > 0
-    let message = s:fail_expected . ' FAILED (matching $TEST_MAY_FAIL):'
+    let message = s:fail_expected .. ' FAILED (matching $TEST_MAY_FAIL):'
     echo message
     call add(s:messages, message)
     call extend(s:messages, s:errors_expected)
@@ -330,7 +330,7 @@ func FinishTesting()
   " Append messages to the file "messages"
   split messages
   call append(line('$'), '')
-  call append(line('$'), 'From ' . g:testname . ':')
+  call append(line('$'), 'From ' .. g:testname .. ':')
   call append(line('$'), s:messages)
   write
 
@@ -355,10 +355,10 @@ else
     source %
   catch /^\cskipped/
     call add(s:messages, '    Skipped')
-    call add(s:skipped, 'SKIPPED ' . expand('%') . ': ' . substitute(v:exception, '^\S*\s\+', '',  ''))
+    call add(s:skipped, 'SKIPPED ' .. expand('%') .. ': ' .. substitute(v:exception, '^\S*\s\+', '',  ''))
   catch
     let s:fail += 1
-    call add(s:errors, 'Caught exception: ' . v:exception . ' @ ' . v:throwpoint)
+    call add(s:errors, 'Caught exception: ' .. v:exception .. ' @ ' .. v:throwpoint)
   endtry
 endif
 
@@ -443,10 +443,10 @@ for g:testfunc in sort(s:tests)
         \ && (index(s:flaky_tests, g:testfunc) >= 0
         \      || g:test_is_flaky)
     while 1
-      call add(s:messages, 'Found errors in ' . g:testfunc . ':')
+      call add(s:messages, 'Found errors in ' .. g:testfunc .. ':')
       call extend(s:messages, v:errors)
 
-      call add(s:total_errors, 'Run ' . g:run_nr . ':')
+      call add(s:total_errors, 'Run ' .. g:run_nr .. ':')
       call extend(s:total_errors, v:errors)
 
       if g:run_nr == 5 || s:prev_error == v:errors[0]
