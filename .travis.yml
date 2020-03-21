@@ -216,6 +216,13 @@ jobs:
       env: *linux-huge
       after_success: *coverage
     - <<: *linux
+      name: huge-testgui+coverage/gcc
+      compiler: gcc
+      env:
+        - *linux-huge
+        - TEST="-C src testgui"
+      after_success: *coverage
+    - <<: *linux
       name: unittests+coverage/gcc
       compiler: gcc
       env: *unittests
@@ -227,13 +234,14 @@ jobs:
         - *linux-huge
         - *asan
       after_failure: *asan_symbolize
-    - <<: *linux
-      name: huge-testgui+coverage/gcc
+    - <<: *linux # ASAN
+      name: huge-testgui+asan/gcc
       compiler: gcc
       env:
         - *linux-huge
+        - *asan
         - TEST="-C src testgui"
-      after_success: *coverage
+      after_failure: *asan_symbolize
     - <<: *linux
       name: vimtags/gcc
       compiler: gcc
