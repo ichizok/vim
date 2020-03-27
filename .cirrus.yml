@@ -12,6 +12,7 @@ freebsd_12_task:
     - ./configure --with-features=${FEATURES}
     - make -j${NPROC}
     - src/vim --version
+    - src/vim -u NONE -i NONE --not-a-term -esNX -V1 -S ci/measure-time.vim -c quit
   test_script:
     # Runtime Indent tests do not work, run only the normal test suite
     - cd src && make test
