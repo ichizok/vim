@@ -20,6 +20,7 @@ before_build:
 
 build_script:
   - ci/appveyor.bat
+  - .\src\vim -u NONE -i NONE --not-a-term -esNX -V1 -S ci/measure-time.vim -c quit
 
 test_script:
   - cd src/testdir
