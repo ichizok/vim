@@ -110,7 +110,7 @@ endfunc
 func Test_quoteplus()
   CheckX11BasedGui
 
-  let g:test_is_flaky = 1
+  DeclareFlakiness
 
   let quoteplus_saved = @+
 

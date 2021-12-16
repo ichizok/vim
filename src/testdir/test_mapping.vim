@@ -289,7 +289,7 @@ endfunc
 func Test_map_timeout_with_timer_interrupt()
   CheckFeature job
   CheckFeature timers
-  let g:test_is_flaky = 1
+  DeclareFlakiness
 
   " Confirm the timer invoked in exit_cb of the job doesn't disturb mapped key
   " sequence.

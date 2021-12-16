@@ -250,4 +250,10 @@ func CheckAllOf(...)
   endfor
 endfunc
 
+" Command to declare that the test is flaky
+command DeclareFlakiness call DeclareFlakiness()
+func DeclareFlakiness()
+  let g:test_is_flaky = 1
+endfunc
+
 " vim: shiftwidth=2 sts=2 expandtab

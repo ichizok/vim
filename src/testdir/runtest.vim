@@ -394,6 +394,7 @@ let s:errors = []
 let s:errors_expected = []
 let s:messages = []
 let s:skipped = []
+
 if expand('%') =~ 'test_vimscript.vim'
   " this test has intentional errors, don't use try/catch.
   source %

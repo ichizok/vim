@@ -40,7 +40,7 @@ func TermWait(buf, ...)
   call term_wait(a:buf, wait_time)
 
   " In case it wasn't set yet.
-  let g:test_is_flaky = 1
+  DeclareFlakiness
 endfunc
 
 " Run Vim with "arguments" in a new terminal window.
@@ -128,7 +128,7 @@ func RunVimInTerminal(arguments, options)
   endif
 
   " Starting a terminal to run Vim is always considered flaky.
-  let g:test_is_flaky = 1
+  DeclareFlakiness
 
   return buf
 endfunc
@@ -136,7 +136,7 @@ endfunc
 " Stop a Vim running in terminal buffer "buf".
 func StopVimInTerminal(buf, kill = 1)
   " Using a terminal to run Vim is always considered flaky.
-  let g:test_is_flaky = 1
+  DeclareFlakiness
 
   call assert_equal("running", term_getstatus(a:buf))
 
@@ -164,7 +164,7 @@ func Run_shell_in_terminal(options)
   else
     let buf = term_start(&shell, a:options)
   endif
-  let g:test_is_flaky = 1
+  DeclareFlakiness
 
   let termlist = term_list()
   call assert_equal(1, len(termlist))

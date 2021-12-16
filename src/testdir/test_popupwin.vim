@@ -2735,7 +2735,7 @@ func Test_popupwin_terminal_buffer()
   CheckFeature terminal
   CheckUnix
   " Starting a terminal to run a shell in is considered flaky.
-  let g:test_is_flaky = 1
+  DeclareFlakiness
 
   let origwin = win_getid()
 

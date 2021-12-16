@@ -98,7 +98,7 @@ func Test_autoread_fast()
   CheckFeature nanotime
 
   " this is timing sensitive
-  let g:test_is_flaky = 1
+  DeclareFlakiness
 
   new Xautoread
   setlocal autoread
