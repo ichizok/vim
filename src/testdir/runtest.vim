@@ -75,6 +75,7 @@ endif
 
 if has('reltime')
   let s:start_time = reltime()
+  let s:initial_start_time = filereadable('start_time') ? str2nr(readfile('start_time')[0]) : (s:start_time)[0]
 endif
 
 " Always use forward slashes.
@@ -169,8 +170,20 @@ function GetAllocId(name)
   return lnum - top - 1
 endfunc
 
+func s:header()
+  if !has('reltime')
+    return ''
+  endif
+  let func_start = reltime()[0]
+  let elapsed = func_start - s:initial_start_time
+  let hour = elapsed / 3600
+  let min = (elapsed % 3600) / 60
+  let sec = elapsed % 60
+  return printf('% 2d:%02d:%02d  ', hour, min, sec)
+endfunc
+
 func RunTheTest(test)
-  echoconsole 'Executing ' . a:test
+  echoconsole s:header() . 'Executing ' . a:test
   if has('reltime')
     let func_start = reltime()
   endif

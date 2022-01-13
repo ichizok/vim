@@ -12,7 +12,7 @@ SCRIPTSOURCE = ../../runtime
 # Comment out this line to see the verbose output of tests.
 #
 # Catches SwapExists to avoid hanging at the ATTENTION prompt.
-REDIR_TEST_TO_NULL = --cmd 'au SwapExists * let v:swapchoice = "e"' | LC_ALL=C LANG=C LANGUAGE=C awk '/Executing Test_/{match($$0, "Executing Test_[^\\)]*\\)"); print substr($$0, RSTART, RLENGTH) "\r"; fflush()}'
+REDIR_TEST_TO_NULL = --cmd 'au SwapExists * let v:swapchoice = "e"' | LC_ALL=C LANG=C LANGUAGE=C awk '/Executing Test_/{match($$0, "[ 0-9][0-9]:[0-9][0-9]:[0-9][0-9]  Executing Test_[^\\)]*\\)"); print substr($$0, RSTART, RLENGTH) "\r"; fflush()}'
 
 # Uncomment this line to use valgrind for memory leaks and extra warnings.
 #   The output goes into a file "valgrind.testN"
@@ -31,9 +31,9 @@ test_options.res test_alot.res: opt_test.vim
 
 .SUFFIXES: .in .out .res .vim
 
-nongui:	nolog tinytests newtests report
+nongui:	nolog starting tinytests newtests report
 
-gui:	nolog tinytests newtests report
+gui:	nolog starting tinytests newtests report
 
 tiny:	nolog tinytests report
 
@@ -89,9 +89,13 @@ clean:
 	-rm -f $(RM_ON_RUN) $(RM_ON_START)
 	-rm -f valgrind.*
 	-rm -f asan.*
+	-rm -f start_time
 
 nolog:
 	-rm -f test.log test_result.log messages
+
+starting:
+	$(VIMPROG) -u NONE --not-a-term --cmd "if 1 | redir! > start_time | echon strftime('%s') | redir END | endif" --cmd "qall!"
 
 
 # Tiny tests.  Works even without the +eval feature.
