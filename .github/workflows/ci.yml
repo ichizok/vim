@@ -281,90 +281,90 @@ jobs:
   #       run: |
   #         curl -k "https://coveralls.io/webhook?repo_token=${COVERALLS_REPO_TOKEN}" -d "payload[build_num]=${GITHUB_RUN_ID}&payload[status]=done"
 
-  macos:
-    runs-on: macos-latest
-
-    env:
-      CC: clang
-      TEST: test
-      SRCDIR: ./src
-      LEAK_CFLAGS: -DEXITFREE
-      TERM: xterm
-
-    strategy:
-      fail-fast: false
-      matrix:
-        features: [tiny, normal, huge]
-
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Install packages
-        if: matrix.features == 'huge'
-        env:
-          HOMEBREW_NO_AUTO_UPDATE: 1
-        run: |
-          brew install lua
-          echo "LUA_PREFIX=/usr/local" >> $GITHUB_ENV
-
-      - name: Set up environment
-        run: |
-          (
-          echo "NPROC=$(getconf _NPROCESSORS_ONLN)"
-          case "${{ matrix.features }}" in
-          tiny)
-            echo "TEST=testtiny"
-            echo "CONFOPT=--disable-gui"
-            ;;
-          normal)
-            ;;
-          huge)
-            echo "CONFOPT=--enable-perlinterp --enable-python3interp --enable-rubyinterp --enable-luainterp --enable-tclinterp"
-            ;;
-          esac
-          ) >> $GITHUB_ENV
-
-      - name: Configure
-        run: |
-          ./configure --with-features=${{ matrix.features }} ${CONFOPT} --enable-fail-if-missing
-          # Append various warning flags to CFLAGS.
-          # BSD sed needs backup extension specified.
-          sed -i.bak -f ci/config.mk.sed ${SRCDIR}/auto/config.mk
-          # On macOS, the entity of gcc is clang.
-          sed -i.bak -f ci/config.mk.clang.sed ${SRCDIR}/auto/config.mk
-          # Suppress some warnings produced by clang 12 and later.
-          if clang --version | grep -qs 'Apple clang version \(1[3-9]\|[2-9]\)\.'; then
-            sed -i.bak -f ci/config.mk.clang-12.sed ${SRCDIR}/auto/config.mk
-          fi
-
-      - name: Build
-        env:
-          LC_ALL: C
-        run: |
-          make -j${NPROC}
-
-      - name: Check version
-        run: |
-          "${SRCDIR}"/vim --version
-          "${SRCDIR}"/vim -u NONE -i NONE --not-a-term -esNX -V1 -S ci/if_ver-1.vim -c quit
-          "${SRCDIR}"/vim -u NONE -i NONE --not-a-term -esNX -V1 -S ci/if_ver-2.vim -c quit
-
-      - name: Test
-        timeout-minutes: 20
-        run: |
-          make ${TEST}
-
-      - name: Upload log
-        if: always()
-        env:
-          AWS_ACCESS_KEY_ID:  ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY:  ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION:  ${{ secrets.AWS_DEFAULT_REGION }}
-          AWS_ARTIFACT_BUCKET: ichizok-ci-log
-          CI_REPOSITORY: github/${{ github.repository }}
-          CI_LOG_NAME: ${{ github.run_number }}/macos-${{ matrix.features }}.tgz
-        run: bash ci/upload-log.sh
-
+  # macos:
+  #   runs-on: macos-latest
+  # 
+  #   env:
+  #     CC: clang
+  #     TEST: test
+  #     SRCDIR: ./src
+  #     LEAK_CFLAGS: -DEXITFREE
+  #     TERM: xterm
+  # 
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       features: [tiny, normal, huge]
+  # 
+  #   steps:
+  #     - uses: actions/checkout@v2
+  # 
+  #     - name: Install packages
+  #       if: matrix.features == 'huge'
+  #       env:
+  #         HOMEBREW_NO_AUTO_UPDATE: 1
+  #       run: |
+  #         brew install lua
+  #         echo "LUA_PREFIX=/usr/local" >> $GITHUB_ENV
+  # 
+  #     - name: Set up environment
+  #       run: |
+  #         (
+  #         echo "NPROC=$(getconf _NPROCESSORS_ONLN)"
+  #         case "${{ matrix.features }}" in
+  #         tiny)
+  #           echo "TEST=testtiny"
+  #           echo "CONFOPT=--disable-gui"
+  #           ;;
+  #         normal)
+  #           ;;
+  #         huge)
+  #           echo "CONFOPT=--enable-perlinterp --enable-python3interp --enable-rubyinterp --enable-luainterp --enable-tclinterp"
+  #           ;;
+  #         esac
+  #         ) >> $GITHUB_ENV
+  # 
+  #     - name: Configure
+  #       run: |
+  #         ./configure --with-features=${{ matrix.features }} ${CONFOPT} --enable-fail-if-missing
+  #         # Append various warning flags to CFLAGS.
+  #         # BSD sed needs backup extension specified.
+  #         sed -i.bak -f ci/config.mk.sed ${SRCDIR}/auto/config.mk
+  #         # On macOS, the entity of gcc is clang.
+  #         sed -i.bak -f ci/config.mk.clang.sed ${SRCDIR}/auto/config.mk
+  #         # Suppress some warnings produced by clang 12 and later.
+  #         if clang --version | grep -qs 'Apple clang version \(1[3-9]\|[2-9]\)\.'; then
+  #           sed -i.bak -f ci/config.mk.clang-12.sed ${SRCDIR}/auto/config.mk
+  #         fi
+  # 
+  #     - name: Build
+  #       env:
+  #         LC_ALL: C
+  #       run: |
+  #         make -j${NPROC}
+  # 
+  #     - name: Check version
+  #       run: |
+  #         "${SRCDIR}"/vim --version
+  #         "${SRCDIR}"/vim -u NONE -i NONE --not-a-term -esNX -V1 -S ci/if_ver-1.vim -c quit
+  #         "${SRCDIR}"/vim -u NONE -i NONE --not-a-term -esNX -V1 -S ci/if_ver-2.vim -c quit
+  # 
+  #     - name: Test
+  #       timeout-minutes: 20
+  #       run: |
+  #         make ${TEST}
+  # 
+  #     - name: Upload log
+  #       if: always()
+  #       env:
+  #         AWS_ACCESS_KEY_ID:  ${{ secrets.AWS_ACCESS_KEY_ID }}
+  #         AWS_SECRET_ACCESS_KEY:  ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  #         AWS_DEFAULT_REGION:  ${{ secrets.AWS_DEFAULT_REGION }}
+  #         AWS_ARTIFACT_BUCKET: ichizok-ci-log
+  #         CI_REPOSITORY: github/${{ github.repository }}
+  #         CI_LOG_NAME: ${{ github.run_number }}/macos-${{ matrix.features }}.tgz
+  #       run: bash ci/upload-log.sh
+  # 
   # windows:
   #   runs-on: windows-2019
   # 
