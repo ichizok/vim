@@ -2136,6 +2136,10 @@ term_vgetc()
     if (modify_other_keys)
 	++no_reduce_keys;
     c = vgetc();
+#ifdef FEAT_GUI
+    if (gui.in_use)
+	ch_log(NULL, "%s#L%d: got %d", __func__, __LINE__, c);
+#endif
     got_int = FALSE;
     State = save_State;
     if (modify_other_keys)
@@ -2627,6 +2631,10 @@ terminal_loop(int blocking)
 	if (raw_c == K_IGNORE)
 	    continue;
 	c = raw_c_to_ctrl(raw_c);
+#ifdef FEAT_GUI
+	if (gui.in_use)
+	    ch_log(NULL, "%s#L%d: got %d", __func__, __LINE__, c);
+#endif
 
 #ifdef UNIX
 	/*
@@ -2668,6 +2676,10 @@ terminal_loop(int blocking)
 #endif
 	    raw_c = term_vgetc();
 	    c = raw_c_to_ctrl(raw_c);
+#ifdef FEAT_GUI
+	if (gui.in_use)
+	    ch_log(NULL, "%s#L%d: got %d", __func__, __LINE__, c);
+#endif
 
 #ifdef FEAT_CMDL_INFO
 	    clear_showcmd();
