@@ -72,6 +72,7 @@ jobs:
           )
           if ${{ matrix.features == 'huge' }}; then
             PKGS+=( \
+              gdb \
               autoconf \
               lcov \
               libcanberra-dev \
@@ -148,7 +149,7 @@ jobs:
           if ${{ contains(matrix.extra, 'vimtags') }}; then
             echo "TEST=-C runtime/doc vimtags VIMEXE=../../${SRCDIR}/vim"
           fi
-          echo "CFLAGS=$CFLAGS"
+          echo "CFLAGS=$CFLAGS -g -O1 -fno-omit-frame-pointer"
           ) >> $GITHUB_ENV
 
       - name: Set up system
@@ -221,6 +222,15 @@ jobs:
       - name: Test
         timeout-minutes: 20
         run: |
+          echo 0 | sudo tee /proc/sys/kernel/yama/ptrace_scope
+          (
+          sleep $((60 * 15))
+          for i in $(seq 10); do
+            echo
+            gdb -batch -p $(pgrep vim) -ex bt
+            sleep 1
+          done
+          ) &
           do_test() { sg audio "sg $(id -gn) '$*'"; }
           do_test make ${SHADOWOPT} ${TEST}
 
