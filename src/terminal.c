@@ -4040,7 +4040,7 @@ get_vterm_color_from_synid(int id, VTermColor *fg, VTermColor *bg)
 	int cterm_bg = -1;
 
 	if (id > 0)
-	    syn_id2cterm_bg(id, &cterm_fg, &cterm_bg);
+	    syn_id2cterm_fg_bg(id, &cterm_fg, &cterm_bg);
 
 	if (cterm_fg >= 0)
 	{

@@ -3565,7 +3565,7 @@ syn_id2colors(int hl_id, guicolor_T *fgp, guicolor_T *bgp)
 	    && defined(FEAT_TERMGUICOLORS)) \
 	|| defined(FEAT_TERMINAL) || defined(PROTO)
     void
-syn_id2cterm_bg(int hl_id, int *fgp, int *bgp)
+syn_id2cterm_fg_bg(int hl_id, int *fgp, int *bgp)
 {
     hl_group_T	*sgp;
 

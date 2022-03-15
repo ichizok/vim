@@ -8125,7 +8125,7 @@ get_default_console_color(
     {
 	ctermfg = -1;
 	if (id > 0)
-	    syn_id2cterm_bg(id, &ctermfg, &ctermbg);
+	    syn_id2cterm_fg_bg(id, &ctermfg, &ctermbg);
 	guifg = ctermfg != -1 ? ctermtoxterm(ctermfg)
 						    : default_console_color_fg;
 	cterm_normal_fg_gui_color = guifg;
@@ -8135,7 +8135,7 @@ get_default_console_color(
     {
 	ctermbg = -1;
 	if (id > 0)
-	    syn_id2cterm_bg(id, &ctermfg, &ctermbg);
+	    syn_id2cterm_fg_bg(id, &ctermfg, &ctermbg);
 	guibg = ctermbg != -1 ? ctermtoxterm(ctermbg)
 						    : default_console_color_bg;
 	cterm_normal_bg_gui_color = guibg;
