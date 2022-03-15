@@ -2783,6 +2783,26 @@ may_toggle_cursor(term_T *term)
     }
 }
 
+// Tie the color index of vterm with of ANSI.
+static int ansi_colors[] = {
+     0, // black
+     4, // dark red
+     2, // dark green
+     7, // dark yellow
+     1, // dark blue
+     5, // dark magenta
+     3, // dark cyan
+     8, // light grey
+    12, // dark grey
+    20, // red
+    16, // green
+    24, // yellow
+    14, // blue
+    22, // magenta
+    18, // cyan
+    26, // white
+};
+
 /*
  * Reverse engineer the RGB value into a cterm color index.
  * First color is 1.  Return 0 if no match found (default color).
@@ -2798,27 +2818,10 @@ color2index(VTermColor *color, int fg, int *boldp)
 	return 0;
     if (VTERM_COLOR_IS_INDEXED(color))
     {
+	if (color->index >= ARRAY_LENGTH(ansi_colors))
+	    return 0;
 	// The first 16 colors and default: use the ANSI index.
-	switch (color->index + 1)
-	{
-	    case  0: return 0;
-	    case  1: return lookup_color( 0, fg, boldp) + 1; // black
-	    case  2: return lookup_color( 4, fg, boldp) + 1; // dark red
-	    case  3: return lookup_color( 2, fg, boldp) + 1; // dark green
-	    case  4: return lookup_color( 7, fg, boldp) + 1; // dark yellow
-	    case  5: return lookup_color( 1, fg, boldp) + 1; // dark blue
-	    case  6: return lookup_color( 5, fg, boldp) + 1; // dark magenta
-	    case  7: return lookup_color( 3, fg, boldp) + 1; // dark cyan
-	    case  8: return lookup_color( 8, fg, boldp) + 1; // light grey
-	    case  9: return lookup_color(12, fg, boldp) + 1; // dark grey
-	    case 10: return lookup_color(20, fg, boldp) + 1; // red
-	    case 11: return lookup_color(16, fg, boldp) + 1; // green
-	    case 12: return lookup_color(24, fg, boldp) + 1; // yellow
-	    case 13: return lookup_color(14, fg, boldp) + 1; // blue
-	    case 14: return lookup_color(22, fg, boldp) + 1; // magenta
-	    case 15: return lookup_color(18, fg, boldp) + 1; // cyan
-	    case 16: return lookup_color(26, fg, boldp) + 1; // white
-	}
+	return lookup_color(ansi_colors[color->index], fg, boldp) + 1;
     }
 
     if (t_colors >= 256)
@@ -3962,6 +3965,10 @@ term_get_attr(win_T *wp, linenr_T lnum, int col)
     static void
 cterm_color2vterm(int nr, VTermColor *rgb)
 {
+    // On Windows cmd.exe needs to convert to ANSI color index.
+    if (nr < 16 && nr == lookup_color(nr, FALSE, NULL))
+	nr = ansi_colors[nr];
+
     cterm_color2rgb(nr, &rgb->red, &rgb->green, &rgb->blue, &rgb->index);
     if (rgb->index == 0)
 	rgb->type = VTERM_COLOR_RGB;
