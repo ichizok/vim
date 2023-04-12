@@ -3549,4 +3549,15 @@ func Test_custom_completion()
   delfunc Check_customlist_completion
 endfunc
 
+func Test_cleared_messages()
+  let save_lang = v:lang
+  language messages C
+
+  " When v:lang is C, the maintainer entry should not exist.
+  messages clear
+  call assert_equal('', execute('messages'))
+
+  exec 'language messages' save_lang
+endfunc
+
 " vim: shiftwidth=2 sts=2 expandtab
