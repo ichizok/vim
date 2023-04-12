@@ -91,52 +91,6 @@ gettext_lang(char_u *name)
 }
 #endif
 
-#if defined(FEAT_MULTI_LANG) || defined(PROTO)
-/*
- * Return TRUE when "lang" starts with a valid language name.
- * Rejects NULL, empty string, "C", "C.UTF-8" and others.
- */
-    static int
-is_valid_mess_lang(char_u *lang)
-{
-    return lang != NULL && ASCII_ISALPHA(lang[0]) && ASCII_ISALPHA(lang[1]);
-}
-
-/*
- * Obtain the current messages language.  Used to set the default for
- * 'helplang'.  May return NULL or an empty string.
- */
-    char_u *
-get_mess_lang(void)
-{
-    char_u *p;
-
-# ifdef HAVE_GET_LOCALE_VAL
-#  if defined(LC_MESSAGES)
-    p = get_locale_val(LC_MESSAGES);
-#  else
-    // This is necessary for Win32, where LC_MESSAGES is not defined and $LANG
-    // may be set to the LCID number.  LC_COLLATE is the best guess, LC_TIME
-    // and LC_MONETARY may be set differently for a Japanese working in the
-    // US.
-    p = get_locale_val(LC_COLLATE);
-#  endif
-# else
-    p = mch_getenv((char_u *)"LC_ALL");
-    if (!is_valid_mess_lang(p))
-    {
-	p = mch_getenv((char_u *)"LC_MESSAGES");
-	if (!is_valid_mess_lang(p))
-	    p = mch_getenv((char_u *)"LANG");
-    }
-# endif
-# ifdef MSWIN
-    p = gettext_lang(p);
-# endif
-    return is_valid_mess_lang(p) ? p : NULL;
-}
-#endif
-
 // Complicated #if; matches with where get_mess_env() is used below.
 #if (defined(FEAT_EVAL) && !((defined(HAVE_LOCALE_H) || defined(X_LOCALE)) \
 	    && defined(LC_MESSAGES))) \
@@ -162,10 +116,48 @@ get_mess_env(void)
     if (p != NULL && VIM_ISDIGIT(*p))
 	p = NULL;		// ignore something like "1043"
 # ifdef HAVE_GET_LOCALE_VAL
+    // This is necessary for Win32, where LC_MESSAGES is not defined and $LANG
+    // may be set to the LCID number.  LC_COLLATE is the best guess, LC_TIME
+    // and LC_MONETARY may be set differently for a Japanese working in the
+    // US.
     if (p == NULL || *p == NUL)
-	p = get_locale_val(LC_CTYPE);
+	p = get_locale_val(LC_COLLATE);
 # endif
     return p;
+}
+#endif
+
+#if defined(FEAT_MULTI_LANG) || defined(PROTO)
+/*
+ * Return TRUE when "lang" starts with a valid language name.
+ * Rejects NULL, empty string, "C", "C.UTF-8" and others.
+ */
+    static int
+is_valid_mess_lang(char_u *lang)
+{
+    return lang != NULL && ASCII_ISALPHA(lang[0]) && ASCII_ISALPHA(lang[1]);
+}
+
+/*
+ * Obtain the current messages language.  Used to set the default for
+ * 'helplang'.  May return NULL or an empty string.
+ */
+    char_u *
+get_mess_lang(void)
+{
+    char_u *p;
+
+    // When LC_MESSAGES isn't defined use the value from $LC_MESSAGES, fall
+    // back to LC_COLLATE if it's empty.
+# if defined(HAVE_GET_LOCALE_VAL) && defined(LC_MESSAGES)
+    p = get_locale_val(LC_MESSAGES);
+# else
+    p = get_mess_env();
+# endif
+# ifdef MSWIN
+    p = gettext_lang(p);
+# endif
+    return is_valid_mess_lang(p) ? p : NULL;
 }
 #endif
 
@@ -189,7 +181,7 @@ set_lang_var(void)
     set_vim_var_string(VV_CTYPE, loc, -1);
 
     // When LC_MESSAGES isn't defined use the value from $LC_MESSAGES, fall
-    // back to LC_CTYPE if it's empty.
+    // back to LC_COLLATE if it's empty.
 # if defined(HAVE_GET_LOCALE_VAL) && defined(LC_MESSAGES)
     loc = get_locale_val(LC_MESSAGES);
 # else
