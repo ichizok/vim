@@ -4,6 +4,7 @@ void mzvim_check_threads(void);
 char *did_set_mzquantum(optset_T *args);
 void mzscheme_end(void);
 int mzscheme_main(void);
+void mzscheme_restore_sighandler(void);
 void mzscheme_buffer_free(buf_T *buf);
 void mzscheme_window_free(win_T *win);
 void ex_mzscheme(exarg_T *eap);

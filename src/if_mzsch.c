@@ -937,6 +937,60 @@ static intptr_t _tls_index = 0;
 # endif
 #endif
 
+#ifdef HAVE_SIGACTION
+    static sighandler_T
+save_sighandler(int sig)
+{
+    struct sigaction sa;
+
+    if (sigaction(sig, NULL, &sa) == -1)
+	return NULL;
+    return sa.sa_handler;
+}
+
+    static void
+restore_sighandler(int sig, sighandler_T handler)
+{
+    struct sigaction sa;
+
+    if (handler != NULL)
+    {
+	sa.sa_handler = handler;
+	sigemptyset(&sa.sa_mask);
+	sa.sa_flags = SA_SIGINFO;
+# ifdef __linux__
+	sa.sa_flags |= SA_ONSTACK;
+# endif
+	sigaction(sig, &sa, NULL);
+    }
+}
+
+# define SAVE_SIGHANDER(sig) \
+    do { \
+	save_##sig##_handler = save_sighandler(sig); \
+    } while (0)
+# define RESTORE_SIGHANDLER(sig) \
+    do { \
+	restore_sighandler(sig, save_##sig##_handler); \
+    } while (0)
+
+# if defined(__FreeBSD__) && (__FreeBSD_version < 700000)
+#  define NEED_HANDLE_SIGBUS
+# else
+#  define NEED_HANDLE_SIGSEGV
+#  ifdef __FreeBSD_kernel__
+#   define NEED_HANDLE_SIGBUS
+#  endif
+# endif
+
+# ifdef NEED_HANDLE_SIGBUS
+static sighandler_T save_SIGBUS_handler;
+# endif
+# ifdef NEED_HANDLE_SIGSEGV
+static sighandler_T save_SIGSEGV_handler;
+# endif
+#endif
+
 /*
  * mzscheme_main() is called early in main().
  * We may call scheme_main_setup() which calls mzscheme_env_main() which then
@@ -1005,10 +1059,28 @@ mzscheme_env_main(Scheme_Env *env, int argc UNUSED, char **argv UNUSED)
 # endif
 #endif
 
+#ifdef NEED_HANDLE_SIGBUS
+    SAVE_SIGHANDER(SIGBUS);
+#endif
+#ifdef NEED_HANDLE_SIGSEGV
+    SAVE_SIGHANDER(SIGSEGV);
+#endif
+
     vim_main2();
     // not reached, vim_main2() will loop until exit()
 
     return 0;
+}
+
+    void
+mzscheme_restore_sighandler(void)
+{
+#ifdef NEED_HANDLE_SIGBUS
+    RESTORE_SIGHANDLER(SIGBUS);
+#endif
+#ifdef NEED_HANDLE_SIGSEGV
+    RESTORE_SIGHANDLER(SIGSEGV);
+#endif
 }
 
     static Scheme_Object*

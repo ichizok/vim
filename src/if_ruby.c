@@ -977,6 +977,10 @@ ensure_ruby_initialized(void)
 	ruby_io_init();
 	ruby_vim_init();
 	ruby_initialized = 1;
+#ifdef FEAT_MZSCHEME
+	// Restore signal handlers of mzscheme replaced by ruby.
+	mzscheme_restore_sighandler();
+#endif
     }
 #ifdef DYNAMIC_RUBY
     else
