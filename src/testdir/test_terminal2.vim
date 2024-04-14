@@ -534,8 +534,6 @@ func Test_term_getcursor()
   call StopShellInTerminal(buf)
 endfunc
 
-" Test for term_gettitle()
-" Known to be flaky on Mac-OS X and the GH runners
 func Test_term_gettitle()
   " term_gettitle() returns an empty string for a non-terminal buffer
   " and for a non-existing buffer.
@@ -545,15 +543,17 @@ func Test_term_gettitle()
   if !has('title') || empty(&t_ts)
     throw "Skipped: can't get/set title"
   endif
-  if has('osx') && !empty($CI) && system('uname -m') =~# 'arm64'
-    " This test often fails with the following error message on Github runners
-    " MacOS-14
-    " '^\\[No Name\\] - VIM\\d*$' does not match 'e] - VIM'
-    " Why? Is the terminal that runs Vim too small?
-    throw 'Skipped: FIXME: Running this test on M1 Mac fails on GitHub Actions'
+
+  let opts = #{}
+  if has('osx') && ((&lines / 2 - 1) * &columns) < 1023
+    " On macOS, pty buffer size is 1023 so the received data from terminal can
+    " be segmentalized at undesired position when terminal window size is
+    " somewhat small; in this test case, the title sequence is devided.
+    " Workaround: Adjust term_rows value.
+    let opts.term_rows = 1023 / &columns
   endif
 
-  let term = term_start([GetVimProg(), '--clean', '-c', 'set noswapfile', '-c', 'set title'])
+  let term = term_start([GetVimProg(), '--clean', '-c', 'set noswapfile', '-c', 'set title'], opts)
   call TermWait(term)
   " When Vim is running as a server then the title ends in VIM{number}, thus
   " optionally match a number after "VIM".
