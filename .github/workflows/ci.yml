@@ -318,7 +318,8 @@ jobs:
       fail-fast: false
       matrix:
         features: [huge]
-        runner: [macos-12, macos-14]
+        runner: [macos-12, macos-13, macos-14]
+        n: [0, 1, 2]
 
     steps:
       - name: Checkout repository from github
