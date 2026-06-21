@@ -3570,7 +3570,7 @@ objects/os_haiku.rsrc: auto/os_haiku.rdef
 	cat $< | $(CCC) -E - | grep -v '^#' | rc -o "$@" -
 
 objects/os_macosx.o: os_macosx.m
-	$(CCC) -o $@ os_macosx.m
+	$(CCC) -fobjc-arc -o $@ os_macosx.m
 
 objects/os_mac_conv.o: os_mac_conv.c $(VIM_H_DEPENDENCIES)
 	$(CCC) -o $@ os_mac_conv.c
